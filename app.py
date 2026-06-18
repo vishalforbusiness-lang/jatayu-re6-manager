@@ -42,6 +42,11 @@ ROLE_PERMISSIONS = {
 }
 
 
+@app.get("/health")
+def health():
+    return jsonify({"ok": True, "service": "jatayu-re6-manager"})
+
+
 class Serializer:
     def to_dict(self):
         result = {}
@@ -767,8 +772,11 @@ def invoice_pdf_response(inv):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     w, h = A4
-    left, right = 30, w - 30
+    left, right = 28, w - 28
     y = h - 22
+    c.setStrokeColor(colors.HexColor("#1f2933"))
+    c.setLineWidth(0.8)
+    c.rect(left - 6, 24, right - left + 12, h - 44, stroke=1, fill=0)
 
     c.setFont("Helvetica-Bold", 12)
     c.drawString(left, y, "TAX INVOICE")
@@ -789,7 +797,7 @@ def invoice_pdf_response(inv):
         c.drawCentredString(left + 53, h - 108, (settings.company_name or "J")[:1].upper())
         c.setFillColor(colors.black)
 
-    c.setFont("Helvetica-Bold", 22)
+    c.setFont("Helvetica-Bold", 21)
     c.drawString(left + 112, h - 82, settings.company_name or "Company Name")
     c.setFont("Helvetica", 10)
     draw_wrapped(c, f"{settings.address}, {settings.city}, {settings.state}, {settings.pincode}".strip(", "), left + 112, h - 102, 72, leading=11)
@@ -849,7 +857,7 @@ def invoice_pdf_response(inv):
     y_ship = draw_wrapped(c, party.party_name if party else "", ship_x, y - 22, 28, leading=12, font="Helvetica-Bold", size=10)
     draw_wrapped(c, address, ship_x, y_ship - 2, 33, leading=11, size=10, max_lines=6)
 
-    y = h - 350
+    y = h - 330
     c.setLineWidth(1.4)
     c.line(left, y, right, y)
     headers = [("ITEMS", left + 6), ("HSN", left + 218), ("QTY.", left + 300), ("RATE", left + 372), ("TAX", left + 448), ("AMOUNT", right - 52)]
@@ -876,7 +884,7 @@ def invoice_pdf_response(inv):
         c.setStrokeColor(colors.black)
         row_y -= 34
 
-    subtotal_y = 344
+    subtotal_y = 368
     c.setLineWidth(1.4)
     c.line(left, subtotal_y, right, subtotal_y)
     c.setFont("Helvetica-Bold", 10)
@@ -946,11 +954,18 @@ def re6_pdf_response(r):
     normal.fontName = "Helvetica"
     normal.fontSize = 8
     normal.leading = 10
+    title_style = styles["Title"].clone("re6-title")
+    title_style.fontSize = 18
+    title_style.leading = 22
+    title_style.spaceAfter = 2
+    subtitle = styles["Normal"].clone("re6-subtitle")
+    subtitle.fontSize = 8.5
+    subtitle.leading = 10
     story = [
-        Paragraph("<b>FORM RE-6</b>", styles["Title"]),
-        Paragraph("(See rule 61(2) of the Explosives Rules, 2008)", styles["Normal"]),
-        Paragraph("<b>Form of records to be maintained by a licensee</b>", styles["Normal"]),
-        Paragraph("Records of explosives transported by road van", styles["Normal"]),
+        Paragraph("<b>FORM RE-6</b>", title_style),
+        Paragraph("(See rule 61(2) of the Explosives Rules, 2008)", subtitle),
+        Paragraph("<b>Form of records to be maintained by a licensee</b>", subtitle),
+        Paragraph("Records of explosives transported by road van", subtitle),
         Spacer(1, 4*mm),
     ]
     small = styles["Normal"].clone("small-re6")

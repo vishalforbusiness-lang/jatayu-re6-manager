@@ -59,6 +59,9 @@ label { width: 100%; color: var(--muted); font-size: 0.82rem; font-weight: 700; 
 .item-input { min-width: 92px; }
 .invoice-total { font-weight: 800; color: var(--accent); }
 .actions { white-space: nowrap; display: flex; gap: 6px; }
+.error-panel { max-width: 720px; }
+.error-panel h2 { font-size: 1.25rem; margin-bottom: 8px; }
+.error-panel p { color: var(--muted); }
 .btn-warning { --bs-btn-bg: var(--accent); --bs-btn-border-color: var(--accent); --bs-btn-color: #171a16; }
 .btn-outline-warning { --bs-btn-color: var(--accent); --bs-btn-border-color: var(--accent); --bs-btn-hover-bg: var(--accent); --bs-btn-hover-border-color: var(--accent); --bs-btn-hover-color: #171a16; }
 

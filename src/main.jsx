@@ -23,14 +23,41 @@ function useApi(token) {
     const headers = { ...(options.headers || {}) };
     if (!(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
     if (token) headers.Authorization = `Bearer ${token}`;
-    const res = await fetch(API + path, { ...options, headers });
+    const res = await fetch(API + path, { ...options, headers }).catch(() => {
+      throw new Error("Server is not reachable. Please wait for deployment to finish and refresh.");
+    });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: res.statusText }));
+      if (res.status === 401) {
+        localStorage.removeItem("jatayu-session");
+        window.location.reload();
+        return;
+      }
       throw new Error(err.error || "Request failed");
     }
     const type = res.headers.get("content-type") || "";
     return type.includes("application/json") ? res.json() : res.blob();
   }, [token]);
+}
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return <div className="surface error-panel">
+        <h2>Something went wrong</h2>
+        <p>{this.state.error.message || "The screen could not be loaded."}</p>
+        <button className="btn btn-warning" onClick={() => { localStorage.removeItem("jatayu-session"); window.location.reload(); }}>Reload App</button>
+      </div>;
+    }
+    return this.props.children;
+  }
 }
 
 function Login({ onLogin }) {
@@ -101,7 +128,9 @@ function Card({ icon: Icon, label, value }) {
 
 function Dashboard({ api }) {
   const [data, setData] = useState(null);
-  useEffect(() => { api("/api/dashboard").then(setData); }, [api]);
+  const [error, setError] = useState("");
+  useEffect(() => { api("/api/dashboard").then(setData).catch(err => setError(err.message)); }, [api]);
+  if (error) return <div className="surface error-panel"><h2>Dashboard unavailable</h2><p>{error}</p></div>;
   if (!data) return <Loader />;
   const chart = {
     labels: data.monthly_sales.map(x => x.month),
@@ -342,7 +371,14 @@ function calcTotals(items, discount = 0, freight = 0, roundOff = 0) {
 }
 
 function App() {
-  const [session, setSession] = useState(() => JSON.parse(localStorage.getItem("jatayu-session") || "null"));
+  const [session, setSession] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("jatayu-session") || "null");
+    } catch {
+      localStorage.removeItem("jatayu-session");
+      return null;
+    }
+  });
   const [active, setActive] = useState("dashboard");
   const [theme, setTheme] = useState(localStorage.getItem("jatayu-theme") || "dark");
   const api = useApi(session?.token);
@@ -368,7 +404,9 @@ function App() {
     settings: <SettingsPage {...common} />
   };
   return <Layout user={session.user} active={active} setActive={setActive} theme={theme} setTheme={setTheme} onLogout={() => { localStorage.removeItem("jatayu-session"); setSession(null); }}>
-    {pages[active]}
+    <ErrorBoundary key={active}>
+      {pages[active]}
+    </ErrorBoundary>
   </Layout>;
 }
 
