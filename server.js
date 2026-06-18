@@ -9,6 +9,13 @@ const dataDir = process.env.DATA_DIR || path.join(root, "data");
 const usersPath = path.join(dataDir, "users.json");
 const sessions = new Map();
 
+const DEFAULT_USERS = [
+  { username: "admin", password: "Admin@2026", companyName: "Admin Profile" },
+  { username: "accounts", password: "Accounts@2026", companyName: "Accounts Profile" },
+  { username: "dispatch", password: "Dispatch@2026", companyName: "Dispatch Profile" },
+  { username: "viewer", password: "Viewer@2026", companyName: "Viewer Profile" }
+];
+
 const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -46,6 +53,36 @@ function verifyPassword(password, stored) {
   const [salt, hash] = String(stored || "").split(":");
   if (!salt || !hash) return false;
   return hashPassword(password, salt) === stored;
+}
+
+function extractDefaultData() {
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const start = html.indexOf("var D = ");
+  const end = html.indexOf("var DEFAULT_DATA", start);
+  if (start === -1 || end === -1) return null;
+  const script = `${html.slice(start, end)}; D;`;
+  const vm = require("vm");
+  return vm.runInNewContext(script, {});
+}
+
+function seedDefaultUsers() {
+  const store = readStore();
+  const defaultData = extractDefaultData();
+  let changed = false;
+  for (const account of DEFAULT_USERS) {
+    if (store.users.some(user => user.username === account.username)) continue;
+    const data = defaultData ? JSON.parse(JSON.stringify(defaultData)) : null;
+    if (data && data.co) data.co.name = account.companyName;
+    store.users.push({
+      username: account.username,
+      passwordHash: hashPassword(account.password),
+      createdAt: new Date().toISOString(),
+      seeded: true,
+      data
+    });
+    changed = true;
+  }
+  if (changed) writeStore(store);
 }
 
 function sendJson(res, status, payload) {
@@ -212,6 +249,7 @@ const server = http.createServer((req, res) => {
 });
 
 ensureStore();
+seedDefaultUsers();
 server.listen(port, "0.0.0.0", () => {
   console.log(`Jagdish Trading Manager running on port ${port}`);
 });
