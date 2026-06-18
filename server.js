@@ -5,7 +5,7 @@ const crypto = require("crypto");
 
 const port = Number(process.env.PORT || 3000);
 const root = __dirname;
-const dataDir = process.env.DATA_DIR || path.join(root, "data");
+const dataDir = process.env.DATA_DIR || (fs.existsSync("/data") ? "/data" : path.join(root, "data"));
 const usersPath = path.join(dataDir, "users.json");
 const sessions = new Map();
 

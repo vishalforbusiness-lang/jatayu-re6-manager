@@ -278,8 +278,8 @@ function migratePartyAddresses(){
   }
 }
 function saveData(){
-  if(!AUTH_TOKEN)return;
-  api('/api/me/data',{method:'POST',body:JSON.stringify({data:D})}).catch(function(e){
+  if(!AUTH_TOKEN)return Promise.resolve();
+  return api('/api/me/data',{method:'POST',body:JSON.stringify({data:D})}).catch(function(e){
     console.warn('Could not save data',e);
     toast('⚠ Could not save to user profile');
   });
@@ -307,12 +307,14 @@ function registerUser(){
   }).then(showApp).catch(function(e){authMessage(e.message);});
 }
 function logoutUser(){
-  saveData();
-  api('/api/logout',{method:'POST',body:'{}'}).catch(function(){});
-  AUTH_TOKEN='';
-  CURRENT_USER=null;
-  sessionStorage.removeItem('jagdish-token');
-  location.reload();
+  saveData().finally(function(){
+    api('/api/logout',{method:'POST',body:'{}'}).catch(function(){}).finally(function(){
+      AUTH_TOKEN='';
+      CURRENT_USER=null;
+      sessionStorage.removeItem('jagdish-token');
+      location.reload();
+    });
+  });
 }
 function resetData(){
   if(!confirm('Reset only your user profile data and restore sample records?'))return;
