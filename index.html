@@ -409,7 +409,7 @@ function pgInv(){
   var inv=D.invoices.slice().reverse();
   for(var i=0;i<inv.length;i++){var ii=inv[i];
     h+='<tr><td><span class="mono" style="color:var(--bm);font-weight:700;cursor:pointer" onclick="viewInv(\''+ii.id+'\')">'+ii.id+'</span></td><td style="font-size:10px">'+fD(ii.date)+'</td><td style="font-size:10px">'+gP(ii.pid).name+'</td><td class="mono">'+(gV(ii.vid).no||'—')+'</td><td class="mono">₹'+fN(ii.sub)+'</td><td class="mono" style="color:var(--bm)">₹'+fN(ii.tgst)+'</td><td class="mono" style="font-weight:700">₹'+fN(ii.grand)+'</td><td><span class="bx xg" style="cursor:pointer" onclick="viewRE6(\''+ii.r6+'\')">'+ii.r6+'</span></td>';
-    h+='<td><div class="act"><button class="btn bo bsm" onclick="viewInv(\''+ii.id+'\')">Invoice</button><button class="btn ba bsm" onclick="viewRE6(\''+ii.r6+'\')">RE-6</button><button class="btn bg bsm" onclick="printInv(\''+ii.id+'\')">⬇ PDF</button></div></td></tr>';
+    h+='<td><div class="act"><button class="btn bo bsm" onclick="viewInv(\''+ii.id+'\')">Invoice</button><button class="btn ba bsm" onclick="viewRE6(\''+ii.r6+'\')">RE-6</button><button class="btn bg bsm" onclick="printInv(\''+ii.id+'\')">⬇ PDF</button><button class="btn bp bsm" onclick="printBoth(\''+ii.id+'\')">Print Both</button></div></td></tr>';
   }
   h+='</tbody></table></div></div>';
   return h;
@@ -574,13 +574,29 @@ function buildInvHTML(inv){
 }
 
 function viewInv(id){
-  var inv=null;for(var i=0;i<D.invoices.length;i++){if(D.invoices[i].id===id){inv=D.invoices[i];break;}}if(!inv)return;
-  openM('GST Invoice — '+id,buildInvHTML(inv),'<button class="btn bo bsm" onclick="closeM()">Close</button><button class="btn ba bsm" onclick="closeM();viewRE6(\''+inv.r6+'\')">📋 View RE-6</button><button class="btn bg bsm" onclick="printInv(\''+id+'\')">⬇ Download PDF</button>');
+  var inv=findInvoice(id);if(!inv)return;
+  openM('GST Invoice — '+id,buildInvHTML(inv),'<button class="btn bo bsm" onclick="closeM()">Close</button><button class="btn ba bsm" onclick="closeM();viewRE6(\''+inv.r6+'\')">📋 View RE-6</button><button class="btn bg bsm" onclick="printInv(\''+id+'\')">⬇ Download PDF</button><button class="btn bp bsm" onclick="printBoth(\''+id+'\')">Print Both</button>');
 }
 function printInv(id){
-  var inv=null;for(var i=0;i<D.invoices.length;i++){if(D.invoices[i].id===id){inv=D.invoices[i];break;}}if(!inv)return;
+  var inv=findInvoice(id);if(!inv)return;
   var w=window.open('','_blank','width=900,height=750');if(!w){toast('⚠ Allow popups');return;}
   w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice '+id+'</title><style>@import url(\'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap\');*{box-sizing:border-box}body{margin:0;padding:0;background:#fff}@media print{@page{size:A4;margin:0}body{margin:0}}</style><script>window.onload=function(){window.print()}<\/script></head><body>'+buildInvHTML(inv)+'</body></html>');
+  w.document.close();
+}
+function findInvoice(id){
+  for(var i=0;i<D.invoices.length;i++){if(D.invoices[i].id===id)return D.invoices[i];}
+  return null;
+}
+function findRE6(id){
+  for(var i=0;i<D.re6list.length;i++){if(D.re6list[i].id===id)return D.re6list[i];}
+  return null;
+}
+function printBoth(id){
+  var inv=findInvoice(id);if(!inv){toast('Invoice not found');return;}
+  var r=findRE6(inv.r6);if(!r){toast('RE-6 not found for this invoice');return;}
+  var w=window.open('','_blank','width=900,height=750');if(!w){toast('⚠ Allow popups');return;}
+  var css="@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');*{box-sizing:border-box}body{margin:0;padding:0;background:#fff}.page-break{break-before:page;page-break-before:always}@media print{@page{size:A4;margin:0}body{margin:0}.page-break{break-before:page;page-break-before:always}}";
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice + RE-6 '+id+'</title><style>'+css+'</style><script>window.onload=function(){window.print()}<\/script></head><body>'+buildInvHTML(inv)+'<div class="page-break"></div>'+buildRE6HTML(r,inv)+'</body></html>');
   w.document.close();
 }
 
@@ -599,7 +615,7 @@ function pgRE6(){
     h+='<td style="font-size:9px"><span class="mono" style="color:var(--ac);font-weight:600">'+(r.vanlicUsed||'—')+'</span><br><span style="color:var(--t3)">('+r.vanlicformUsed+')</span></td>';
     h+='<td class="mono" style="font-size:9px;color:var(--bm)">'+(r.maglicUsed||'—')+'</td>';
     h+='<td style="font-size:10px">'+(drv.name||'—')+'</td><td style="font-size:10px">'+(party.name||'—')+'</td>';
-    h+='<td><div class="act"><button class="btn ba bsm" onclick="viewRE6(\''+r.id+'\')">View</button><button class="btn bg bsm" onclick="printRE6(\''+r.id+'\')">⬇ PDF</button></div></td></tr>';
+    h+='<td><div class="act"><button class="btn ba bsm" onclick="viewRE6(\''+r.id+'\')">View</button><button class="btn bg bsm" onclick="printRE6(\''+r.id+'\')">⬇ PDF</button><button class="btn bp bsm" onclick="printBoth(\''+r.iid+'\')">Print Both</button></div></td></tr>';
   }
   h+='</tbody></table></div></div>';
   return h;
@@ -658,13 +674,13 @@ function buildRE6HTML(r,inv){
 }
 
 function viewRE6(id){
-  var r=null;for(var i=0;i<D.re6list.length;i++){if(D.re6list[i].id===id){r=D.re6list[i];break;}}if(!r){toast('RE-6 not found');return;}
-  var inv=null;for(var i=0;i<D.invoices.length;i++){if(D.invoices[i].id===r.iid){inv=D.invoices[i];break;}}if(!inv)return;
-  openM('FORM RE-6 — '+id,buildRE6HTML(r,inv),'<button class="btn bo bsm" onclick="closeM()">Close</button><button class="btn bo bsm" onclick="closeM();viewInv(\''+inv.id+'\')">View Invoice</button><button class="btn bg bsm" onclick="printRE6(\''+id+'\')">⬇ Download RE-6 PDF</button>');
+  var r=findRE6(id);if(!r){toast('RE-6 not found');return;}
+  var inv=findInvoice(r.iid);if(!inv)return;
+  openM('FORM RE-6 — '+id,buildRE6HTML(r,inv),'<button class="btn bo bsm" onclick="closeM()">Close</button><button class="btn bo bsm" onclick="closeM();viewInv(\''+inv.id+'\')">View Invoice</button><button class="btn bg bsm" onclick="printRE6(\''+id+'\')">⬇ Download RE-6 PDF</button><button class="btn bp bsm" onclick="printBoth(\''+inv.id+'\')">Print Both</button>');
 }
 function printRE6(id){
-  var r=null;for(var i=0;i<D.re6list.length;i++){if(D.re6list[i].id===id){r=D.re6list[i];break;}}if(!r)return;
-  var inv=null;for(var i=0;i<D.invoices.length;i++){if(D.invoices[i].id===r.iid){inv=D.invoices[i];break;}}if(!inv)return;
+  var r=findRE6(id);if(!r)return;
+  var inv=findInvoice(r.iid);if(!inv)return;
   var w=window.open('','_blank','width=900,height=750');if(!w){toast('⚠ Allow popups');return;}
   w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>RE-6 '+id+'</title><style>*{box-sizing:border-box}body{margin:0;padding:0;background:#fff}@media print{@page{size:A4;margin:0}body{margin:0}}</style><script>window.onload=function(){window.print()}<\/script></head><body>'+buildRE6HTML(r,inv)+'</body></html>');
   w.document.close();
