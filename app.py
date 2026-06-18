@@ -16,6 +16,8 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from openpyxl import Workbook
 
@@ -699,26 +701,340 @@ def pdf_response(title, rows, headers, filename, extra=None, landscape_page=Fals
     return send_file(buffer, as_attachment=True, download_name=filename, mimetype="application/pdf")
 
 
+def fmt_money(value):
+    return f"{money(value):,.2f}".rstrip("0").rstrip(".")
+
+
+ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"]
+TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+
+
+def number_words(n):
+    n = int(round(n or 0))
+    if n == 0:
+        return "Zero"
+    def below_100(num):
+        return ONES[num] if num < 20 else (TENS[num // 10] + (" " + ONES[num % 10] if num % 10 else ""))
+    def below_1000(num):
+        return (ONES[num // 100] + " Hundred " if num >= 100 else "") + (below_100(num % 100) if num % 100 else "")
+    parts = []
+    for value, name in [(10000000, "Crore"), (100000, "Lakh"), (1000, "Thousand")]:
+        if n >= value:
+            parts.append(below_1000(n // value).strip() + " " + name)
+            n %= value
+    if n:
+        parts.append(below_1000(n).strip())
+    return " ".join(parts).strip()
+
+
+def wrap_text(text, max_chars):
+    words = str(text or "").replace("\n", " ").split()
+    lines, current = [], ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if len(candidate) > max_chars and current:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return lines or [""]
+
+
+def draw_wrapped(c, text, x, y, max_chars, leading=12, font="Helvetica", size=10, bold_first=False, max_lines=None):
+    lines = wrap_text(text, max_chars)
+    if max_lines:
+        lines = lines[:max_lines]
+    for index, line in enumerate(lines):
+        c.setFont("Helvetica-Bold" if bold_first and index == 0 else font, size)
+        c.drawString(x, y - index * leading, line)
+    return y - len(lines) * leading
+
+
+def draw_uploaded_image(c, path, x, y, width, height):
+    if not path or not os.path.exists(path):
+        return False
+    try:
+        c.drawImage(ImageReader(path), x, y, width=width, height=height, preserveAspectRatio=True, mask="auto")
+        return True
+    except Exception:
+        return False
+
+
+def invoice_pdf_response(inv):
+    settings = current_settings()
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    w, h = A4
+    left, right = 30, w - 30
+    y = h - 22
+
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(left, y, "TAX INVOICE")
+    c.setStrokeColor(colors.HexColor("#8a8798"))
+    c.setFillColor(colors.white)
+    c.rect(left + 106, y - 6, 158, 20, stroke=1, fill=0)
+    c.setFillColor(colors.HexColor("#8a8798"))
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(left + 110, y, "ORIGINAL FOR RECIPIENT")
+    c.setFillColor(colors.black)
+
+    logo_drawn = draw_uploaded_image(c, settings.logo_path, left + 8, h - 138, 92, 92)
+    if not logo_drawn:
+        c.setFillColor(colors.HexColor("#1f3148"))
+        c.rect(left + 12, h - 128, 82, 78, stroke=0, fill=1)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 42)
+        c.drawCentredString(left + 53, h - 108, (settings.company_name or "J")[:1].upper())
+        c.setFillColor(colors.black)
+
+    c.setFont("Helvetica-Bold", 22)
+    c.drawString(left + 112, h - 82, settings.company_name or "Company Name")
+    c.setFont("Helvetica", 10)
+    draw_wrapped(c, f"{settings.address}, {settings.city}, {settings.state}, {settings.pincode}".strip(", "), left + 112, h - 102, 72, leading=11)
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(left + 112, h - 124, "Mobile:")
+    c.setFont("Helvetica", 10)
+    c.drawString(left + 154, h - 124, settings.mobile or settings.phone or "-")
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(left + 230, h - 124, "GSTIN:")
+    c.setFont("Helvetica", 10)
+    c.drawString(left + 266, h - 124, settings.gstin or "-")
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(left + 374, h - 124, "PAN Number:")
+    c.setFont("Helvetica", 10)
+    c.drawString(left + 440, h - 124, settings.pan or "-")
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(left + 112, h - 138, "Email:")
+    c.setFont("Helvetica", 10)
+    c.drawString(left + 148, h - 138, settings.email or "-")
+
+    y = h - 165
+    c.setLineWidth(6)
+    c.line(left, y + 15, right, y + 15)
+    c.setFillColor(colors.HexColor("#e8e8e8"))
+    c.rect(left, y - 26, right - left, 42, stroke=0, fill=1)
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(left + 12, y - 7, "Invoice No.:")
+    c.setFont("Helvetica", 11)
+    c.drawString(left + 86, y - 7, inv.invoice_number)
+    c.setFont("Helvetica-Bold", 11)
+    c.drawRightString(right - 100, y - 7, "Invoice Date:")
+    c.setFont("Helvetica", 11)
+    c.drawRightString(right - 12, y - 7, inv.invoice_date.strftime("%d/%m/%Y"))
+
+    y -= 44
+    bill_x, ship_x, veh_x = left, left + 182, left + 362
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(bill_x, y, "BILL TO")
+    c.drawString(ship_x, y, "SHIP TO")
+    c.drawString(veh_x, y, "Vehicle No.")
+    re6_vehicle = RE6Record.query.filter_by(invoice_id=inv.id).order_by(RE6Record.id.desc()).first()
+    c.setFont("Helvetica", 11)
+    c.drawString(veh_x + 108, y, re6_vehicle.vehicle_number if re6_vehicle else "")
+
+    party = inv.party
+    address = party.address if party else ""
+    party_block = f"{party.party_name if party else ''}\n{address}"
+    y_bill = draw_wrapped(c, party.party_name if party else "", bill_x, y - 22, 28, leading=12, font="Helvetica-Bold", size=10)
+    y_bill = draw_wrapped(c, address, bill_x, y_bill - 2, 33, leading=11, size=10, max_lines=5)
+    c.setFont("Helvetica", 10)
+    c.drawString(bill_x, y_bill - 2, f"Mobile: {party.mobile if party else ''}")
+    c.drawString(bill_x, y_bill - 15, f"GSTIN: {party.gstin if party else ''}")
+    pan = party.gstin[2:12] if party and party.gstin and len(party.gstin) >= 12 else ""
+    c.drawString(bill_x, y_bill - 28, f"PAN Number: {pan}")
+    c.drawString(bill_x, y_bill - 41, f"Place of Supply: {settings.state or ''}")
+    y_ship = draw_wrapped(c, party.party_name if party else "", ship_x, y - 22, 28, leading=12, font="Helvetica-Bold", size=10)
+    draw_wrapped(c, address, ship_x, y_ship - 2, 33, leading=11, size=10, max_lines=6)
+
+    y = h - 350
+    c.setLineWidth(1.4)
+    c.line(left, y, right, y)
+    headers = [("ITEMS", left + 6), ("HSN", left + 218), ("QTY.", left + 300), ("RATE", left + 372), ("TAX", left + 448), ("AMOUNT", right - 52)]
+    c.setFont("Helvetica-Bold", 11)
+    for label, x in headers:
+        c.drawString(x, y - 20, label)
+    c.setLineWidth(1.4)
+    c.line(left, y - 32, right, y - 32)
+    row_y = y - 52
+    for item in inv.items[:8]:
+        c.setFont("Helvetica", 10)
+        draw_wrapped(c, item.description, left + 6, row_y, 30, leading=10, size=10, max_lines=2)
+        c.drawRightString(left + 255, row_y, item.hsn_code or "")
+        c.drawRightString(left + 322, row_y, f"{fmt_money(item.quantity)} {item.unit}")
+        c.drawRightString(left + 404, row_y, fmt_money(item.rate))
+        tax_amount = item.cgst + item.sgst + item.igst
+        c.drawRightString(left + 464, row_y, fmt_money(tax_amount))
+        c.setFont("Helvetica", 8)
+        c.drawRightString(left + 464, row_y - 10, f"({fmt_money(item.gst_rate)}%)")
+        c.setFont("Helvetica", 10)
+        c.drawRightString(right - 8, row_y, fmt_money(item.total))
+        c.setStrokeColor(colors.HexColor("#d0d0d0"))
+        c.line(left, row_y - 22, right, row_y - 22)
+        c.setStrokeColor(colors.black)
+        row_y -= 34
+
+    subtotal_y = 344
+    c.setLineWidth(1.4)
+    c.line(left, subtotal_y, right, subtotal_y)
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(left + 6, subtotal_y - 17, "SUBTOTAL")
+    c.drawRightString(left + 322, subtotal_y - 17, "-")
+    c.drawRightString(left + 464, subtotal_y - 17, f"Rs. {fmt_money(inv.cgst + inv.sgst + inv.igst)}")
+    c.drawRightString(right - 8, subtotal_y - 17, f"Rs. {fmt_money(inv.grand_total)}")
+    c.line(left, subtotal_y - 28, right, subtotal_y - 28)
+
+    y = subtotal_y - 48
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(left + 6, y, "BANK DETAILS")
+    c.setFont("Helvetica", 10)
+    bank_rows = [("Name:", settings.company_name), ("IFSC Code:", settings.ifsc), ("Account No:", settings.account_number), ("Bank:", f"{settings.bank_name} ,{settings.branch}".strip(" ,"))]
+    for idx, (label, value) in enumerate(bank_rows):
+        c.drawString(left + 6, y - 15 - idx * 14, label)
+        c.drawString(left + 86, y - 15 - idx * 14, value or "-")
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(left + 6, y - 92, "TERMS AND CONDITIONS")
+    c.setFont("Helvetica", 10)
+    c.drawString(left + 6, y - 108, "1. All disputes are subject to local jurisdiction only")
+
+    tx = left + 348
+    ty = y + 3
+    totals = [
+        ("Taxable Amount", inv.subtotal),
+        ("CGST @9%", inv.cgst),
+        ("SGST @9%", inv.sgst),
+        ("IGST", inv.igst),
+        ("Total Amount", inv.grand_total),
+        ("Received Amount", inv.paid_amount),
+        ("Previous Balance", inv.previous_due),
+        ("Current Balance", inv.previous_due + inv.grand_total - inv.paid_amount),
+    ]
+    for idx, (label, value) in enumerate(totals):
+        yy = ty - idx * 14
+        c.setFont("Helvetica-Bold" if label == "Total Amount" else "Helvetica", 10)
+        c.drawRightString(right - 92, yy, label)
+        c.drawRightString(right - 8, yy, f"Rs. {fmt_money(value)}")
+        if label in {"IGST", "Total Amount", "Received Amount"}:
+            c.setStrokeColor(colors.HexColor("#777777"))
+            c.line(tx, yy - 6, right, yy - 6)
+            c.setStrokeColor(colors.black)
+
+    c.setFont("Helvetica-Bold", 10)
+    c.drawRightString(right - 8, 154, "Total Amount (in words)")
+    c.setFont("Helvetica", 10)
+    c.drawRightString(right - 8, 140, f"{number_words(inv.grand_total)} Rupees")
+    draw_uploaded_image(c, settings.signature_path, right - 86, 80, 76, 42)
+    c.setFont("Helvetica-Bold", 10)
+    c.drawRightString(right - 8, 48, "AUTHORISED SIGNATORY FOR")
+    c.setFont("Helvetica", 10)
+    c.drawRightString(right - 8, 34, settings.company_name or "")
+
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name=f"{inv.invoice_number.replace('/', '-')}.pdf", mimetype="application/pdf")
+
+
+def re6_pdf_response(r):
+    settings = current_settings()
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=16*mm, leftMargin=16*mm, topMargin=12*mm, bottomMargin=12*mm)
+    styles = getSampleStyleSheet()
+    normal = styles["Normal"]
+    normal.fontName = "Helvetica"
+    normal.fontSize = 8
+    normal.leading = 10
+    story = [
+        Paragraph("<b>FORM RE-6</b>", styles["Title"]),
+        Paragraph("(See rule 61(2) of the Explosives Rules, 2008)", styles["Normal"]),
+        Paragraph("<b>Form of records to be maintained by a licensee</b>", styles["Normal"]),
+        Paragraph("Records of explosives transported by road van", styles["Normal"]),
+        Spacer(1, 4*mm),
+    ]
+    small = styles["Normal"].clone("small-re6")
+    small.fontName = "Helvetica"
+    small.fontSize = 6.4
+    small.leading = 7.2
+    small_bold = styles["Normal"].clone("small-re6-bold")
+    small_bold.fontName = "Helvetica-Bold"
+    small_bold.fontSize = 6.4
+    small_bold.leading = 7.2
+    def sp(text, bold=False):
+        return Paragraph(str(text or "").replace("\n", "<br/>"), small_bold if bold else small)
+    items = []
+    if r.invoice:
+        for item in r.invoice.items:
+            items.append([
+                sp(item.description),
+                sp(item.explosive_class or ""),
+                sp(item.division or ""),
+                sp(f"{item.batch_number or 'BARCODE AS PER ANNEXURE'}\n{item.manufacture_date.isoformat() if item.manufacture_date else ''}"),
+                sp(f"{fmt_money(item.quantity)} {item.unit}"),
+                sp(f"{item.number_of_cases or ''} {item.unit if item.number_of_cases else ''}"),
+            ])
+    if not items:
+        items = [[sp(r.product_details), sp(""), sp(""), sp(""), sp(r.quantity), sp(str(r.number_of_cases or ""))]]
+    desc_headers = [sp("Name and Description", True), sp("Class", True), sp("Division", True), sp("Batch No. and Date", True), sp("Quantity transported", True), sp("No. of Case/Packets", True)]
+    desc_table = Table([desc_headers] + items, colWidths=[36*mm, 13*mm, 13*mm, 27*mm, 20*mm, 17*mm])
+    desc_table.setStyle(TableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.6, colors.black),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 6.4),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    licence = settings.default_loading_point or "Magazine License No."
+    def p(text, bold=False):
+        safe = str(text or "").replace("\n", "<br/>")
+        return Paragraph(f"<b>{safe}</b>" if bold else safe, normal)
+    rows = [
+        [p("Note", True), p("This record should be kept up to date. Licence number in Form LE-7 of Explosives Rules, 2008")],
+        [p("Explosives Road Van No.", True), p(r.vehicle_number)],
+        [p("1 Date", True), p(r.re6_date.strftime("%d/%m/%Y"))],
+        [p("2 Name, address and license number of the consignor", True), p(f"{r.consignor}\n{settings.address}\nDispatched from {licence}")],
+        [p("3 Place of loading", True), p(r.loading_point)],
+        [p("4-8 Description of explosives", True), desc_table],
+        [p("9 PASS Number", True), p(r.re6_number)],
+        [p("10 Signature of the consignor", True), p("")],
+        [p("11 Name and address of the consignee", True), p(f"{r.consignee}\n{r.destination}")],
+        [p("12 Place of unloading", True), p(r.destination)],
+        [p("13 Date of unloading of explosives", True), p("")],
+        [p("14 Signature of consignee", True), p("")],
+        [p("15 Remarks", True), p("")],
+    ]
+    table = Table(rows, colWidths=[44*mm, 130*mm], repeatRows=0)
+    table.setStyle(TableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.6, colors.black),
+        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ("FONTNAME", (1, 0), (1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    story.append(table)
+    doc.build(story)
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name=f"{r.re6_number.replace('/', '-')}.pdf", mimetype="application/pdf")
+
+
 @app.get("/api/invoices/<int:invoice_id>/pdf")
 @require_auth("invoices")
 def invoice_pdf(invoice_id):
     inv = Invoice.query.get_or_404(invoice_id)
-    rows = [[i.description, i.hsn_code, i.quantity, i.unit, i.rate, i.taxable_value, i.gst_rate, i.cgst, i.sgst, i.igst, i.total] for i in inv.items]
-    extra = f"Invoice: {inv.invoice_number} | Date: {inv.invoice_date.isoformat()} | Party: {inv.party.party_name} | Status: {inv.status} | Total: Rs. {inv.grand_total}"
-    return pdf_response("Tax Invoice", rows, ["Description", "HSN", "Qty", "Unit", "Rate", "Taxable", "GST%", "CGST", "SGST", "IGST", "Total"], f"{inv.invoice_number.replace('/', '-')}.pdf", extra, True)
+    return invoice_pdf_response(inv)
 
 
 @app.get("/api/re6/<int:record_id>/pdf")
 @require_auth("re6")
 def re6_pdf(record_id):
     r = RE6Record.query.get_or_404(record_id)
-    rows = [
-        ["RE6 Number", r.re6_number], ["Date", r.re6_date.isoformat()], ["Consignor", r.consignor],
-        ["Consignee", r.consignee], ["Vehicle", r.vehicle_number], ["Driver / License", r.driver_details],
-        ["LE7 Number", r.le7_number], ["Product Details", r.product_details], ["Quantity", r.quantity],
-        ["Number Of Cases", r.number_of_cases], ["Loading Point", r.loading_point], ["Destination", r.destination],
-    ]
-    return pdf_response("PESO Form RE6", rows, ["Field", "Details"], f"{r.re6_number.replace('/', '-')}.pdf")
+    return re6_pdf_response(r)
 
 
 @app.get("/api/ledger/pdf")
