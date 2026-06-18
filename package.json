@@ -1,0 +1,41 @@
+{
+  "name": "jatayu-re6-manager",
+  "version": "1.0.0",
+  "description": "Offline desktop GST invoice and PESO RE6 manager for Indian explosives businesses.",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173",
+    "build": "vite build --outDir dist",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "electron": "electron .",
+    "dist:desktop": "electron-builder"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "bootstrap": "^5.3.3",
+    "chart.js": "^4.4.3",
+    "electron": "^31.3.1",
+    "electron-builder": "^24.13.3",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.3.1",
+    "vite": "^5.3.5"
+  },
+  "build": {
+    "appId": "in.jatayu.re6manager",
+    "productName": "Jatayu RE6 Manager",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "app.py",
+      "requirements.txt",
+      "data/**/*",
+      "uploads/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
