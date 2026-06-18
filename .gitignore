@@ -1,13 +1,5 @@
 node_modules/
 __pycache__/
-*.pyc
-.venv/
-venv/
-uploads/*
-!uploads/.gitkeep
-*.log
 npm-debug.log*
-dist-electron/
-release/
-*.spec
+.DS_Store
 tmp/

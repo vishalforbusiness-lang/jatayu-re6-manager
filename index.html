@@ -1,12 +1,746 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jatayu RE6 Manager</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--b:#1a3a5c;--bm:#2563a8;--bl:#e8f0fb;
+--ac:#c8410a;--sc:#15803d;--sl:#dcfce7;
+--wc:#b45309;--wl:#fef3c7;
+--dc:#b91c1c;--dl:#fee2e2;
+--bg:#fff;--bg2:#f6f7f9;--bg3:#eef0f4;
+--br:rgba(26,58,92,0.14);--brs:rgba(26,58,92,0.28);
+--t:#1a2030;--t2:#4a5568;--t3:#8492a6;
+}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--bg2);color:var(--t);font-size:13px;line-height:1.4}
+.app{display:flex;height:640px;overflow:hidden}
+.sb{width:196px;min-width:196px;background:var(--b);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sb-logo{padding:12px 12px 10px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-n{font-size:11px;font-weight:600;color:#fff;line-height:1.3}
+.sb-s{font-size:8px;color:rgba(255,255,255,.38);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.sb-pk{display:inline-block;background:var(--ac);color:#fff;font-size:8px;padding:1px 5px;border-radius:3px;margin-top:4px}
+.ns{padding:7px 0 2px}
+.nl{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.28);padding:0 12px 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:11px;color:rgba(255,255,255,.62);transition:background .1s;border-left:2px solid transparent}
+.ni:hover{background:rgba(255,255,255,.08);color:#fff}
+.ni.on{background:rgba(255,255,255,.14);color:#fff;border-left-color:#60a5fa}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.top{background:var(--bg);border-bottom:1px solid var(--br);height:46px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.top-t{font-size:14px;font-weight:600}
+.upill{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--br);border-radius:20px;padding:2px 9px 2px 3px;font-size:10px}
+.uav{width:22px;height:22px;border-radius:50%;background:var(--bm);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600}
+.pg{flex:1;padding:16px;overflow-y:auto}
+.card{background:var(--bg);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:14px}
+.chd{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.ct{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)}
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.sc{background:var(--bg);border:1px solid var(--br);border-radius:10px;padding:11px 13px}
+.sl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.sv{font-size:19px;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.sc.bl{border-left:3px solid var(--bm)}.sc.gr{border-left:3px solid var(--sc)}.sc.am{border-left:3px solid var(--wc)}.sc.rd{border-left:3px solid var(--dc)}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:inherit;line-height:1}
+.bp{background:var(--bm);color:#fff}.bp:hover{opacity:.88}
+.bo{background:transparent;color:var(--bm);border:1px solid var(--brs)}.bo:hover{background:var(--bl)}
+.ba{background:var(--ac);color:#fff}.ba:hover{opacity:.88}
+.bg{background:var(--sc);color:#fff}.bg:hover{opacity:.88}
+.bd{background:transparent;color:var(--dc);border:1px solid rgba(185,28,28,.25)}.bd:hover{background:var(--dl)}
+.bsm{padding:3px 8px;font-size:11px}
+table.t{width:100%;border-collapse:collapse;font-size:11px}
+table.t th{background:var(--bg2);font-weight:500;color:var(--t2);padding:7px 10px;text-align:left;border-bottom:1px solid var(--br);font-size:9px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+table.t td{padding:8px 10px;border-bottom:1px solid var(--br);vertical-align:middle}
+table.t tr:last-child td{border-bottom:none}
+table.t tr:hover td{background:var(--bg2)}
+.bx{display:inline-flex;align-items:center;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:500}
+.xg{background:var(--sl);color:var(--sc)}.xr{background:var(--dl);color:var(--dc)}.xa{background:var(--wl);color:var(--wc)}.xb{background:var(--bl);color:var(--bm)}.xgr{background:var(--bg3);color:var(--t2)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.phd{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+.pt{font-size:16px;font-weight:600}.ps{font-size:10px;color:var(--t3);margin-top:2px}
+.al{padding:8px 12px;border-radius:7px;font-size:11px;margin-bottom:12px}
+.ali{background:var(--bl);color:#0c447c;border:1px solid rgba(37,99,168,.2)}
+.alw{background:var(--wl);color:var(--wc);border:1px solid rgba(180,83,9,.2)}
+.alo{background:var(--sl);color:var(--sc);border:1px solid rgba(21,128,61,.2)}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:10px}
+.pb{height:3px;background:var(--bg3);border-radius:2px;margin-top:3px;overflow:hidden}
+.pf{height:100%;border-radius:2px}
+.avt{width:28px;height:28px;border-radius:50%;background:var(--bl);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--bm);flex-shrink:0}
+.vic{width:28px;height:28px;border-radius:6px;background:var(--wl);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.act{display:flex;gap:4px}
+.slbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin:10px 0 7px;padding-bottom:4px;border-bottom:1px solid var(--br)}
+.mback{background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:18px 10px;overflow-y:auto;position:absolute;inset:0;z-index:200}
+.mback.open{display:flex}
+.mbox{background:var(--bg);border-radius:10px;width:100%;max-width:700px;border:1px solid var(--br);max-height:94vh;display:flex;flex-direction:column}
+.mhd{padding:12px 16px 10px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.mt{font-size:13px;font-weight:600}
+.mbdy{padding:14px 16px;overflow-y:auto;flex:1}
+.mft{padding:10px 16px;border-top:1px solid var(--br);display:flex;justify-content:flex-end;gap:7px;flex-shrink:0}
+.xbtn{background:none;border:none;font-size:16px;cursor:pointer;color:var(--t3);padding:1px 5px;border-radius:3px;line-height:1}
+.xbtn:hover{background:var(--bg3)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg{margin-bottom:10px}
+.fl{display:block;font-size:10px;font-weight:500;color:var(--t2);margin-bottom:3px}
+.fl.r:after{content:' *';color:var(--dc)}
+input.fi,select.fi,textarea.fi{width:100%;padding:6px 9px;border:1px solid var(--brs);border-radius:6px;font-size:12px;font-family:inherit;color:var(--t);background:var(--bg);outline:none;transition:border .12s}
+input.fi:focus,select.fi:focus,textarea.fi:focus{border-color:var(--bm);box-shadow:0 0 0 2px rgba(37,99,168,.1)}
+select.fi{appearance:auto}
+textarea.fi{resize:vertical;min-height:52px}
+.itbl{width:100%;border-collapse:collapse;font-size:11px}
+.itbl th{background:var(--bg2);padding:5px 7px;text-align:left;font-size:9px;text-transform:uppercase;font-weight:500;color:var(--t2);border:1px solid var(--br)}
+.itbl td{padding:3px 3px;border:1px solid var(--br);vertical-align:middle}
+.ii{width:100%;border:none;background:transparent;font-size:11px;font-family:inherit;color:var(--t);outline:none;padding:3px 5px}
+.ii:focus{background:var(--bl);border-radius:2px}
+.is{width:100%;border:none;background:transparent;font-size:10px;font-family:inherit;color:var(--t);outline:none;padding:3px 3px}
+.toast-w{position:fixed;bottom:16px;right:16px;z-index:999}
+.toast{display:inline-block;background:#1a2030;color:#fff;padding:7px 14px;border-radius:7px;font-size:12px;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.on{opacity:1}
+</style>
+
+<h2 class="sr-only">M/s. Jagdish Trading Company — Explosive Dealer Management System v8</h2>
+
+<div style="position:relative">
+<div class="app" id="app">
+  <nav class="sb">
+    <div class="sb-logo">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+        <div style="width:26px;height:26px;background:rgba(255,255,255,.15);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">💥</div>
+        <div><div class="sb-n">Jagdish Trading<br>Company</div><div class="sb-s">Explosive Dealer</div></div>
+      </div>
+      <div class="sb-pk">PESO · Maharashtra</div>
+    </div>
+    <div class="ns"><div class="nl">Overview</div>
+      <div class="ni on" id="ni-dashboard" onclick="goPage('dashboard')"><span>📊</span><span>Dashboard</span></div>
+    </div>
+    <div class="ns"><div class="nl">Operations</div>
+      <div class="ni" id="ni-invoices" onclick="goPage('invoices')"><span>🧾</span><span>GST Invoices</span></div>
+      <div class="ni" id="ni-re6" onclick="goPage('re6')"><span>📋</span><span>RE-6 Register</span></div>
+      <div class="ni" id="ni-inventory" onclick="goPage('inventory')"><span>📦</span><span>Inventory</span></div>
+    </div>
+    <div class="ns"><div class="nl">Fleet</div>
+      <div class="ni" id="ni-drivers" onclick="goPage('drivers')"><span>🧑‍✈️</span><span>Drivers</span></div>
+      <div class="ni" id="ni-vehicles" onclick="goPage('vehicles')"><span>🚛</span><span>Vehicles</span></div>
+    </div>
+    <div class="ns"><div class="nl">Masters</div>
+      <div class="ni" id="ni-parties" onclick="goPage('parties')"><span>👥</span><span>Parties</span></div>
+      <div class="ni" id="ni-products" onclick="goPage('products')"><span>💣</span><span>Products</span></div>
+      <div class="ni" id="ni-settings" onclick="goPage('settings')"><span>⚙️</span><span>Settings</span></div>
+    </div>
+    <div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.08)">
+      <div style="font-size:8px;color:rgba(255,255,255,.26)">Explosives Rules 2008<br>PESO Compliant v8</div>
+    </div>
+  </nav>
+  <div class="main">
+    <div class="top">
+      <div class="top-t" id="ptitle">Dashboard</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-size:9px;color:var(--t3);font-family:'IBM Plex Mono',monospace" id="dstr"></div>
+        <div class="upill"><div class="uav">JT</div><span>Admin</span></div>
+      </div>
+    </div>
+    <div class="pg" id="pg"></div>
+  </div>
+</div>
+<div class="mback" id="mb" onclick="if(event.target===this)closeM()">
+  <div class="mbox">
+    <div class="mhd"><div class="mt" id="mtit"></div><button class="xbtn" onclick="closeM()">✕</button></div>
+    <div class="mbdy" id="mbdy"></div>
+    <div class="mft" id="mft"></div>
+  </div>
+</div>
+</div>
+<div class="toast-w"><span class="toast" id="tst"></span></div>
+
+<script>
+var D = {
+  iNum:0, r6Num:0,
+  co:{
+    name:'M/s. Jagdish Trading Company',
+    addr:'At Post Dhondewadi, Taluka-Khatav, Dist. Satara, Maharashtra - 415102',
+    phone:'9422933393', email:'jagdishtcompany@gmail.com',
+    gstin:'27ANAPC6152C1ZL', pan:'ANAPC6152C',
+    sc:'27', state:'Maharashtra',
+    // NO explosive store licence here — moved to vehicles
+    // NO licform here — moved to vehicles
+    maglic:'',
+    bank:'', acc:'', ifsc:''
+  },
+  drivers:[
+    {id:1,name:'Ramesh Kumar',phone:'9876543210',addr:'Satara, MH',dl:'MH11 2019 0056123',dltype:'HMV',dlissue:'2019-06-10',dlexp:'2029-06-09',badge:'PESO/DRV/2022/0041',badgeexp:'2025-06-10',vid:1,status:'active'},
+    {id:2,name:'Sunil Yadav',phone:'9765432109',addr:'Karad, MH',dl:'MH11 2020 0078456',dltype:'HMV+LMV',dlissue:'2020-03-15',dlexp:'2027-04-22',badge:'PESO/DRV/2023/0089',badgeexp:'2026-11-30',vid:2,status:'active'}
+  ],
+  // Vehicles now hold: explics (van explosive licence), explicform (LE-7 etc), explicexp
+  vehicles:[
+    {id:1,no:'MH11 AB 1234',type:'Truck (HMV)',rc:'MH11 2019 0041234',own:'Own',model:'Tata 1109',year:'2019',
+     explics:'E/HQ/MH/22/1109',explicform:'LE-7',explicexp:'2025-12-31',
+     insno:'NIC/MH/2024/00891',insexp:'2025-06-15',
+     permitno:'PESO/MH/2024/0112',permitexp:'2025-08-20',
+     fitno:'FC/MH/2024/04421',fitexp:'2025-09-10',status:'active'},
+    {id:2,no:'MH11 CD 5678',type:'Mini Truck (LMV)',rc:'MH11 2021 0078912',own:'Hired',model:'Mahindra Bolero',year:'2021',
+     explics:'E/HQ/MH/22/2244',explicform:'LE-7',explicexp:'2025-10-15',
+     insno:'OIC/MH/2024/01122',insexp:'2025-04-30',
+     permitno:'PESO/MH/2024/0098',permitexp:'2025-05-15',
+     fitno:'FC/MH/2024/03312',fitexp:'2025-07-22',status:'active'}
+  ],
+  parties:[
+    {id:1,name:'Rajesh Mines Pvt. Ltd.',gstin:'27AABCR5678S1Z2',addr:'MIDC Area, Nagpur, Maharashtra - 440028',contact:'Rajesh Sharma',phone:'9876543210',lic:'MH/EXP/2023/0118',state:'Maharashtra',sc:'27'},
+    {id:2,name:'Shri Ganesh Quarry Works',gstin:'23AABCS9012T1Z3',addr:'Jabalpur Road, Katni, Madhya Pradesh - 483501',contact:'Suresh Patel',phone:'9812345678',lic:'MP/EXP/2023/0089',state:'Madhya Pradesh',sc:'23'},
+    {id:3,name:'Maharashtra Road Projects Ltd.',gstin:'27AABCM3456U1Z4',addr:'Beed Bypass Road, Aurangabad, MH - 431001',contact:'Pradeep Deshmukh',phone:'9823456789',lic:'MH/EXP/2022/0201',state:'Maharashtra',sc:'27'}
+  ],
+  products:[
+    {id:1,name:'Emulsion Explosive',cls:'1',div:'1D',hsn:'36029090',unit:'Kg',gst:18,mfr:'Solar Industries Ltd.',rate:85},
+    {id:2,name:'Electric Detonator (ED)',cls:'1',div:'1B',hsn:'36030000',unit:'Nos',gst:18,mfr:'Economic Explosives Ltd.',rate:12},
+    {id:3,name:'ANFO Explosive',cls:'1',div:'1D',hsn:'36029090',unit:'Kg',gst:18,mfr:'Bilattipur Chemical Works',rate:78},
+    {id:4,name:'Safety Fuse',cls:'1',div:'1G',hsn:'36031000',unit:'Meter',gst:18,mfr:'IDL Industries Ltd.',rate:8},
+    {id:5,name:'Detonating Cord',cls:'1',div:'1D',hsn:'36031000',unit:'Meter',gst:18,mfr:'Solar Industries Ltd.',rate:15}
+  ],
+  stock:[
+    {id:1,pid:1,batch:'SOL-2024-0891',mfg:'2024-01-15',qty:1200,unit:'Kg',min:200},
+    {id:2,pid:2,batch:'EEL-2024-0445',mfg:'2024-02-20',qty:5000,unit:'Nos',min:500},
+    {id:3,pid:3,batch:'BCW-2024-0712',mfg:'2024-03-25',qty:600,unit:'Kg',min:150},
+    {id:4,pid:4,batch:'IDL-2024-0201',mfg:'2024-01-20',qty:3000,unit:'Meter',min:300}
+  ],
+  invoices:[
+    {id:'INV-2024-001',date:'2024-04-10',pid:1,pass:'MH/PASS/2024/1001',vid:1,did:1,maglicUsed:'',unload:'Rajesh Mines, MIDC, Nagpur',items:[{pid:1,pname:'Emulsion Explosive',batch:'SOL-2024-0891',bdate:'2024-01-15',qty:500,unit:'Kg',rate:85,cases:20,amt:42500,gst:18,igst:0,cgst:3825,sgst:3825,tot:50150,hsn:'36029090',cls:'1',div:'1D'}],sub:42500,tgst:7650,grand:50150,r6:'RE6-2024-001'},
+    {id:'INV-2024-002',date:'2024-04-15',pid:2,pass:'MH/PASS/2024/1002',vid:1,did:2,maglicUsed:'',unload:'Shri Ganesh Quarry, Katni, MP',items:[{pid:1,pname:'Emulsion Explosive',batch:'SOL-2024-0891',bdate:'2024-01-15',qty:300,unit:'Kg',rate:85,cases:12,amt:25500,gst:18,igst:4590,cgst:0,sgst:0,tot:30090,hsn:'36029090',cls:'1',div:'1D'},{pid:2,pname:'Electric Detonator (ED)',batch:'EEL-2024-0445',bdate:'2024-02-20',qty:500,unit:'Nos',rate:12,cases:5,amt:6000,gst:18,igst:1080,cgst:0,sgst:0,tot:7080,hsn:'36030000',cls:'1',div:'1B'}],sub:31500,tgst:5670,grand:37170,r6:'RE6-2024-002'}
+  ],
+  re6list:[
+    {id:'RE6-2024-001',iid:'INV-2024-001',date:'2024-04-10',pass:'MH/PASS/2024/1001',vid:1,did:1,vanlicUsed:'E/HQ/MH/22/1109',vanlicformUsed:'LE-7',maglicUsed:'',load:'At Post Dhondewadi, Taluka-Khatav, Dist. Satara, Maharashtra - 415102',unload:'Rajesh Mines, MIDC, Nagpur, MH',rem:''},
+    {id:'RE6-2024-002',iid:'INV-2024-002',date:'2024-04-15',pass:'MH/PASS/2024/1002',vid:1,did:2,vanlicUsed:'E/HQ/MH/22/1109',vanlicformUsed:'LE-7',maglicUsed:'',load:'At Post Dhondewadi, Taluka-Khatav, Dist. Satara, Maharashtra - 415102',unload:'Shri Ganesh Quarry Works, Katni, MP',rem:''}
+  ]
+};
+
+// ============================================================
+// HELPERS
+// ============================================================
+function fN(n){return Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fI(n){return Number(n).toLocaleString('en-IN');}
+function fD(d){if(!d)return '';var dt=new Date(d);var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return dt.getDate()+' '+m[dt.getMonth()]+' '+dt.getFullYear();}
+function fDS(d){if(!d)return '';var dt=new Date(d);var dd=dt.getDate();var mm=dt.getMonth()+1;return (dd<10?'0':'')+dd+'/'+(mm<10?'0':'')+mm+'/'+dt.getFullYear();}
+function toStr(){return new Date().toISOString().split('T')[0];}
+function dl(d){if(!d)return null;return Math.ceil((new Date(d)-new Date())/86400000);}
+function gP(id){for(var i=0;i<D.parties.length;i++){if(D.parties[i].id==id)return D.parties[i];}return {};}
+function gPr(id){for(var i=0;i<D.products.length;i++){if(D.products[i].id==id)return D.products[i];}return {};}
+function gV(id){for(var i=0;i<D.vehicles.length;i++){if(D.vehicles[i].id==id)return D.vehicles[i];}return {};}
+function gDr(id){for(var i=0;i<D.drivers.length;i++){if(D.drivers[i].id==id)return D.drivers[i];}return {};}
+function inits(n){if(!n)return '??';var p=n.split(' ');return (p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
+function expBadge(d){var n=dl(d);if(!d||n===null)return '<span class="bx xgr">—</span>';if(n<0)return '<span class="bx xr">Expired</span>';if(n<=60)return '<span class="bx xa">'+fD(d)+'</span>';return '<span class="bx xgr">'+fD(d)+'</span>';}
+function stBadge(s){var m={active:'xg',inactive:'xr','on-leave':'xa',maintenance:'xa'};var l={active:'Active',inactive:'Inactive','on-leave':'On Leave',maintenance:'Maintenance'};return '<span class="bx '+(m[s]||'xgr')+'">'+(l[s]||s)+'</span>';}
+function toast(msg){var t=document.getElementById('tst');t.textContent=msg;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},3000);}
+function openM(title,body,foot){document.getElementById('mtit').textContent=title;document.getElementById('mbdy').innerHTML=body;document.getElementById('mft').innerHTML=foot;document.getElementById('mb').classList.add('open');}
+function closeM(){document.getElementById('mb').classList.remove('open');}
+function n2w(n){
+  var a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  var b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function t(x){if(x<20)return a[x];if(x<100)return b[Math.floor(x/10)]+(x%10?' '+a[x%10]:'');if(x<1000)return a[Math.floor(x/100)]+' Hundred'+(x%100?' '+t(x%100):'');if(x<100000)return t(Math.floor(x/1000))+' Thousand'+(x%1000?' '+t(x%1000):'');if(x<10000000)return t(Math.floor(x/100000))+' Lakh'+(x%100000?' '+t(x%100000):'');return t(Math.floor(x/10000000))+' Crore'+(x%10000000?' '+t(x%10000000):'');}
+  var i=Math.floor(n),d=Math.round((n-i)*100);
+  return t(i)+' Rupees'+(d?' and '+t(d)+' Paise':'')+' Only';
+}
+
+// ============================================================
+// NAV
+// ============================================================
+function goPage(p){
+  var all=['dashboard','invoices','re6','inventory','drivers','vehicles','parties','products','settings'];
+  for(var i=0;i<all.length;i++){var e=document.getElementById('ni-'+all[i]);if(e)e.classList.remove('on');}
+  var e2=document.getElementById('ni-'+p);if(e2)e2.classList.add('on');
+  var titles={dashboard:'Dashboard',invoices:'GST Invoices',re6:'RE-6 Register',inventory:'Inventory',drivers:'Driver Register',vehicles:'Vehicle Register',parties:'Parties',products:'Products',settings:'Settings'};
+  document.getElementById('ptitle').textContent=titles[p]||p;
+  var fns={dashboard:pgDash,invoices:pgInv,re6:pgRE6,inventory:pgStock,drivers:pgDrv,vehicles:pgVeh,parties:pgParties,products:pgProds,settings:pgSettings};
+  document.getElementById('pg').innerHTML=fns[p]?fns[p]():'';
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function pgDash(){
+  var ts=0;for(var i=0;i<D.invoices.length;i++)ts+=D.invoices[i].grand;
+  var tg=0;for(var i=0;i<D.invoices.length;i++)tg+=D.invoices[i].tgst;
+  var low=[];for(var i=0;i<D.stock.length;i++){if(D.stock[i].qty<=D.stock[i].min)low.push(D.stock[i]);}
+  var av=0;for(var i=0;i<D.vehicles.length;i++){if(D.vehicles[i].status==='active')av++;}
+  var ad=0;for(var i=0;i<D.drivers.length;i++){if(D.drivers[i].status==='active')ad++;}
+  var h='<div style="background:var(--b);border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px">';
+  h+='<div style="width:40px;height:40px;background:rgba(255,255,255,.14);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">💥</div>';
+  h+='<div><div style="font-size:14px;font-weight:700;color:#fff">'+D.co.name+'</div>';
+  h+='<div style="font-size:9px;color:rgba(255,255,255,.62);margin-top:2px">'+D.co.addr+'</div>';
+  h+='<div style="font-size:9px;color:rgba(255,255,255,.62);margin-top:1px">GSTIN: <b style="color:#fff">'+D.co.gstin+'</b> &nbsp;|&nbsp; PAN: <b style="color:#fff">'+D.co.pan+'</b> &nbsp;|&nbsp; Ph: '+D.co.phone+'</div>';
+  h+=(D.co.maglic?'<div style="font-size:9px;color:rgba(255,255,255,.55)">Magazine Lic: <b style="color:#fff">'+D.co.maglic+'</b></div>':'<div style="font-size:9px;color:#fbbf24">⚠ Set Magazine Licence in Settings</div>');
+  h+='</div></div>';
+  h+='<div class="sgrid"><div class="sc bl"><div class="sl">Total Sales</div><div class="sv" style="font-size:15px">₹'+fN(ts)+'</div></div><div class="sc gr"><div class="sl">GST Collected</div><div class="sv" style="font-size:15px">₹'+fN(tg)+'</div></div><div class="sc am"><div class="sl">Active Fleet</div><div class="sv">'+av+'/'+ad+'</div></div><div class="sc '+(low.length?'rd':'gr')+'"><div class="sl">Low Stock</div><div class="sv">'+low.length+'</div></div></div>';
+  if(low.length){h+='<div class="al alw">';for(var i=0;i<low.length;i++)h+='⚠ '+gPr(low[i].pid).name+' ('+low[i].qty+' '+low[i].unit+')'+(i<low.length-1?' | ':'');h+='</div>';}
+  h+='<div class="two"><div class="card"><div class="chd"><div class="ct">Recent Invoices</div><button class="btn bo bsm" onclick="goPage(\'invoices\')">All</button></div>';
+  h+='<table class="t"><thead><tr><th>Invoice</th><th>Party</th><th>Total</th><th>RE-6</th></tr></thead><tbody>';
+  var inv=D.invoices.slice().reverse();
+  for(var i=0;i<inv.length;i++){var ii=inv[i];h+='<tr><td><span class="mono" style="color:var(--bm);font-weight:600;cursor:pointer" onclick="viewInv(\''+ii.id+'\')">'+ii.id+'</span><div style="font-size:9px;color:var(--t3)">'+fD(ii.date)+'</div></td><td style="font-size:10px">'+gP(ii.pid).name+'</td><td class="mono" style="font-weight:600">₹'+fN(ii.grand)+'</td><td><span class="bx xg" style="cursor:pointer" onclick="viewRE6(\''+ii.r6+'\')">'+ii.r6+'</span></td></tr>';}
+  h+='</tbody></table></div>';
+  h+='<div class="card"><div class="chd"><div class="ct">Fleet</div></div>';
+  for(var i=0;i<D.vehicles.length;i++){var v=D.vehicles[i];var drv=null;for(var j=0;j<D.drivers.length;j++){if(D.drivers[j].vid===v.id)drv=D.drivers[j];}
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--br)"><div class="vic">🚛</div><div style="flex:1"><div style="font-weight:700;font-size:11px;font-family:\'IBM Plex Mono\',monospace">'+v.no+'</div><div style="font-size:9px;color:var(--t3)">Lic ('+v.explicform+'): '+(v.explics||'Not set')+'</div><div style="font-size:9px;color:var(--t3)">'+(drv?drv.name:'No driver')+'</div></div>'+stBadge(v.status)+'</div>';}
+  h+='</div></div>';
+  h+='<div class="card"><div class="ct" style="margin-bottom:10px">Stock Overview</div>';
+  for(var i=0;i<D.products.length;i++){var p=D.products[i];var tot=0,mn=200;for(var j=0;j<D.stock.length;j++){if(D.stock[j].pid===p.id){tot+=D.stock[j].qty;mn=D.stock[j].min;}}var pct=Math.min(100,Math.round(tot/mn*50));var col=tot<mn?'#b91c1c':tot<mn*1.5?'#b45309':'#15803d';h+='<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span>'+p.name+'</span><span style="font-family:\'IBM Plex Mono\',monospace;font-weight:600;color:'+col+'">'+fI(tot)+' '+p.unit+'</span></div><div class="pb"><div class="pf" style="width:'+pct+'%;background:'+col+'"></div></div></div>';}
+  h+='</div>';
+  return h;
+}
+
+// ============================================================
+// INVOICES
+// ============================================================
+function pgInv(){
+  var h='<div class="phd"><div><div class="pt">GST Invoices</div><div class="ps">RE-6 auto-generated on save</div></div><button class="btn bp" onclick="openNewInv()">+ New Invoice</button></div>';
+  h+='<div class="al ali">RE-6 is automatically created when you save an invoice. Date of unloading is left blank for manual fill after delivery.</div>';
+  h+='<div class="card" style="margin-bottom:0"><div style="overflow-x:auto"><table class="t"><thead><tr><th>Invoice No.</th><th>Date</th><th>Party</th><th>Vehicle</th><th>Taxable</th><th>GST</th><th>Grand Total</th><th>RE-6</th><th>Actions</th></tr></thead><tbody>';
+  var inv=D.invoices.slice().reverse();
+  for(var i=0;i<inv.length;i++){var ii=inv[i];
+    h+='<tr><td><span class="mono" style="color:var(--bm);font-weight:700;cursor:pointer" onclick="viewInv(\''+ii.id+'\')">'+ii.id+'</span></td><td style="font-size:10px">'+fD(ii.date)+'</td><td style="font-size:10px">'+gP(ii.pid).name+'</td><td class="mono">'+(gV(ii.vid).no||'—')+'</td><td class="mono">₹'+fN(ii.sub)+'</td><td class="mono" style="color:var(--bm)">₹'+fN(ii.tgst)+'</td><td class="mono" style="font-weight:700">₹'+fN(ii.grand)+'</td><td><span class="bx xg" style="cursor:pointer" onclick="viewRE6(\''+ii.r6+'\')">'+ii.r6+'</span></td>';
+    h+='<td><div class="act"><button class="btn bo bsm" onclick="viewInv(\''+ii.id+'\')">Invoice</button><button class="btn ba bsm" onclick="viewRE6(\''+ii.r6+'\')">RE-6</button><button class="btn bg bsm" onclick="printInv(\''+ii.id+'\')">⬇ PDF</button></div></td></tr>';
+  }
+  h+='</tbody></table></div></div>';
+  return h;
+}
+
+// ============================================================
+// NEW INVOICE FORM
+// ============================================================
+var NI={date:'',pid:'',pass:'',vid:'',did:'',maglicUsed:'',unload:'',rows:[]};
+
+function openNewInv(){
+  NI={date:toStr(),pid:'',pass:'',vid:'',did:'',maglicUsed:D.co.maglic||'',unload:'',rows:[{pid:'',pname:'',batch:'',bdate:'',qty:'',rate:'',unit:'',gst:18,cases:'',hsn:'',cls:'',div:''}]};
+  buildInvModal();
+}
+
+function buildInvModal(){
+  var pOpts='<option value="">Select party...</option>';
+  for(var i=0;i<D.parties.length;i++){pOpts+='<option value="'+D.parties[i].id+'"'+(NI.pid==D.parties[i].id?' selected':'')+'>'+D.parties[i].name+'</option>';}
+  var vOpts='<option value="">Select vehicle...</option>';
+  for(var i=0;i<D.vehicles.length;i++){if(D.vehicles[i].status==='active'){vOpts+='<option value="'+D.vehicles[i].id+'"'+(NI.vid==D.vehicles[i].id?' selected':'')+'>'+D.vehicles[i].no+' ['+D.vehicles[i].explicform+': '+(D.vehicles[i].explics||'No lic')+']</option>';}}
+  var dOpts='<option value="">Select driver...</option>';
+  for(var i=0;i<D.drivers.length;i++){if(D.drivers[i].status==='active'){dOpts+='<option value="'+D.drivers[i].id+'"'+(NI.did==D.drivers[i].id?' selected':'')+'>'+D.drivers[i].name+' ('+D.drivers[i].dl+')</option>';}}
+  var rowsHtml='';
+  for(var i=0;i<NI.rows.length;i++){
+    var r=NI.rows[i];
+    var prOpts='<option value="">Select product...</option>';
+    for(var j=0;j<D.products.length;j++){prOpts+='<option value="'+D.products[j].id+'"'+(r.pid==D.products[j].id?' selected':'')+'>'+D.products[j].name+'</option>';}
+    var amt=(parseFloat(r.qty)||0)*(parseFloat(r.rate)||0);
+    rowsHtml+='<tr>';
+    rowsHtml+='<td><select class="is" style="width:132px" onchange="niSelProd('+i+',this.value)">'+prOpts+'</select></td>';
+    rowsHtml+='<td><input class="ii" style="width:86px" placeholder="Batch No." value="'+r.batch+'" oninput="niField('+i+',\'batch\',this.value)"></td>';
+    rowsHtml+='<td><input class="ii" style="width:80px" type="date" value="'+r.bdate+'" oninput="niField('+i+',\'bdate\',this.value)"></td>';
+    rowsHtml+='<td><input class="ii" style="width:52px" type="number" min="0" placeholder="0" value="'+r.qty+'" oninput="niField('+i+',\'qty\',this.value)"></td>';
+    rowsHtml+='<td style="padding:3px 6px;font-size:10px;color:var(--t3);min-width:32px">'+(r.unit||'—')+'</td>';
+    rowsHtml+='<td><input class="ii" style="width:58px" type="number" min="0" placeholder="Rate" value="'+r.rate+'" oninput="niField('+i+',\'rate\',this.value)"></td>';
+    rowsHtml+='<td><input class="ii" style="width:40px" type="number" min="0" placeholder="0" value="'+r.cases+'" oninput="niField('+i+',\'cases\',this.value)"></td>';
+    rowsHtml+='<td class="mono" style="font-size:10px;padding:3px 6px;min-width:70px" id="rt-'+i+'">₹'+fN(amt)+'</td>';
+    rowsHtml+='<td><button style="border:none;background:none;color:var(--dc);cursor:pointer;font-size:14px;padding:0 3px" onclick="niDelRow('+i+')">✕</button></td>';
+    rowsHtml+='</tr>';
+  }
+  var sub=0,gstAmt=0;
+  for(var i=0;i<NI.rows.length;i++){var a=(parseFloat(NI.rows[i].qty)||0)*(parseFloat(NI.rows[i].rate)||0);sub+=a;gstAmt+=a*(NI.rows[i].gst||18)/100;}
+  var body='';
+  body+='<div class="fr" style="margin-bottom:8px"><div class="fg"><label class="fl r">Invoice Date</label><input class="fi" type="date" id="ni-date" value="'+NI.date+'" oninput="NI.date=this.value"></div><div class="fg"><label class="fl r">Party (Consignee)</label><select class="fi" id="ni-pid" onchange="NI.pid=this.value;niAutoUnload(this.value)">'+pOpts+'</select></div></div>';
+  body+='<div class="fr" style="margin-bottom:8px"><div class="fg"><label class="fl r">PASS Number</label><input class="fi" id="ni-pass" placeholder="MH/PASS/2024/XXXX" value="'+NI.pass+'" oninput="NI.pass=this.value"></div><div class="fg"><label class="fl r">Vehicle</label><select class="fi" id="ni-vid" onchange="NI.vid=this.value;niAutoDriver(this.value)">'+vOpts+'</select></div></div>';
+  body+='<div class="fr" style="margin-bottom:10px"><div class="fg"><label class="fl r">Driver</label><select class="fi" id="ni-did" onchange="NI.did=this.value">'+dOpts+'</select></div><div class="fg"><label class="fl">Magazine Licence (this trip)</label><input class="fi" id="ni-maglic" value="'+NI.maglicUsed+'" placeholder="E/WC/MH/22/XXX" oninput="NI.maglicUsed=this.value"></div></div>';
+  body+='<div class="fg"><label class="fl">Place of Unloading</label><input class="fi" id="ni-unload" value="'+NI.unload+'" placeholder="Consignee site address" oninput="NI.unload=this.value"></div>';
+  body+='<div class="slbl">Explosive Items</div>';
+  body+='<div style="overflow-x:auto;margin-bottom:7px"><table class="itbl"><thead><tr><th>Product</th><th>Batch No.</th><th>Batch Date</th><th>Qty</th><th>Unit</th><th>Rate ₹</th><th>Cases</th><th>Amount</th><th></th></tr></thead><tbody id="ni-rows">'+rowsHtml+'</tbody></table></div>';
+  body+='<button class="btn bo bsm" onclick="niAddRow()" style="margin-bottom:12px">+ Add Row</button>';
+  body+='<div id="ni-totals" style="background:var(--bg2);border-radius:6px;padding:10px 14px;font-size:11px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--t2)">Taxable Amount</span><span class="mono">₹'+fN(sub)+'</span></div><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--t2)">GST</span><span class="mono" style="color:var(--bm)">₹'+fN(gstAmt)+'</span></div><div style="border-top:1px solid var(--br);margin:5px 0"></div><div style="display:flex;justify-content:space-between"><span style="font-weight:600">Grand Total</span><span class="mono" style="font-size:14px;font-weight:700;color:var(--b)">₹'+fN(sub+gstAmt)+'</span></div></div>';
+  openM('New GST Invoice',body,'<button class="btn bo bsm" onclick="closeM()">Cancel</button><button class="btn bp bsm" onclick="saveInv()">💾 Save + Auto-Generate RE-6</button>');
+}
+
+function niField(i,f,v){
+  NI.rows[i][f]=v;
+  if(f==='qty'||f==='rate'){
+    var amt=(parseFloat(NI.rows[i].qty)||0)*(parseFloat(NI.rows[i].rate)||0);
+    var el=document.getElementById('rt-'+i);if(el)el.textContent='₹'+fN(amt);
+    niUpdateTotals();
+  }
+}
+function niUpdateTotals(){
+  var sub=0,gst=0;
+  for(var i=0;i<NI.rows.length;i++){var a=(parseFloat(NI.rows[i].qty)||0)*(parseFloat(NI.rows[i].rate)||0);sub+=a;gst+=a*(NI.rows[i].gst||18)/100;}
+  var el=document.getElementById('ni-totals');
+  if(el)el.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--t2)">Taxable Amount</span><span class="mono">₹'+fN(sub)+'</span></div><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--t2)">GST</span><span class="mono" style="color:var(--bm)">₹'+fN(gst)+'</span></div><div style="border-top:1px solid var(--br);margin:5px 0"></div><div style="display:flex;justify-content:space-between"><span style="font-weight:600">Grand Total</span><span class="mono" style="font-size:14px;font-weight:700;color:var(--b)">₹'+fN(sub+gst)+'</span></div>';
+}
+function niSelProd(i,val){
+  NI.rows[i].pid=parseInt(val)||'';
+  var pr=gPr(val);
+  if(pr&&pr.name){NI.rows[i].pname=pr.name;NI.rows[i].unit=pr.unit;NI.rows[i].gst=pr.gst;NI.rows[i].hsn=pr.hsn;NI.rows[i].cls=pr.cls;NI.rows[i].div=pr.div;if(!NI.rows[i].rate||NI.rows[i].rate==='')NI.rows[i].rate=pr.rate||'';}
+  buildInvModal();
+}
+function niAddRow(){NI.rows.push({pid:'',pname:'',batch:'',bdate:'',qty:'',rate:'',unit:'',gst:18,cases:'',hsn:'',cls:'',div:''});buildInvModal();}
+function niDelRow(i){NI.rows.splice(i,1);if(!NI.rows.length)NI.rows.push({pid:'',pname:'',batch:'',bdate:'',qty:'',rate:'',unit:'',gst:18,cases:'',hsn:'',cls:'',div:''});buildInvModal();}
+function niAutoDriver(vid){var v2=parseInt(vid);for(var i=0;i<D.drivers.length;i++){if(D.drivers[i].vid===v2&&D.drivers[i].status==='active'){NI.did=D.drivers[i].id;break;}}buildInvModal();}
+function niAutoUnload(pid){var p=gP(pid);if(p&&p.name&&!NI.unload)NI.unload=p.name+', '+p.addr;buildInvModal();}
+
+function saveInv(){
+  if(!NI.pid||!NI.pass||!NI.vid||!NI.did){toast('⚠ Fill all required fields');return;}
+  var valid=[];for(var i=0;i<NI.rows.length;i++){var r=NI.rows[i];if(r.pid&&parseFloat(r.qty)>0&&parseFloat(r.rate)>0)valid.push(r);}
+  if(!valid.length){toast('⚠ Add at least one complete item');return;}
+  var yr=new Date().getFullYear();D.iNum++;
+  var invId='INV-'+yr+'-'+('00'+D.iNum).slice(-3);
+  var party=gP(NI.pid);var same=party.sc===D.co.sc;
+  var items=[],sub=0,tgst=0;
+  for(var i=0;i<valid.length;i++){
+    var r=valid[i];var a=(parseFloat(r.qty)||0)*(parseFloat(r.rate)||0);var ga=a*(r.gst||18)/100;
+    items.push({pid:parseInt(r.pid),pname:r.pname,batch:r.batch,bdate:r.bdate,qty:parseFloat(r.qty),unit:r.unit,rate:parseFloat(r.rate),cases:parseInt(r.cases)||Math.ceil(parseFloat(r.qty)/25),amt:a,gst:r.gst||18,igst:same?0:ga,cgst:same?ga/2:0,sgst:same?ga/2:0,tot:a+ga,hsn:r.hsn,cls:r.cls,div:r.div});
+    sub+=a;tgst+=ga;
+  }
+  D.r6Num++;var r6Id='RE6-'+yr+'-'+('00'+D.r6Num).slice(-3);
+  var veh=gV(parseInt(NI.vid));
+  // RE-6 stores vanlicUsed + vanlicformUsed from vehicle, maglicUsed from form
+  // unloaddate intentionally left BLANK so it can be filled manually after delivery
+  D.re6list.push({id:r6Id,iid:invId,date:NI.date,pass:NI.pass,vid:parseInt(NI.vid),did:parseInt(NI.did),vanlicUsed:veh.explics||'',vanlicformUsed:veh.explicform||'LE-7',maglicUsed:NI.maglicUsed||D.co.maglic||'',load:D.co.addr,unload:NI.unload||(party.name+', '+party.addr),unloaddate:'',rem:''});
+  D.invoices.push({id:invId,date:NI.date,pid:parseInt(NI.pid),pass:NI.pass,vid:parseInt(NI.vid),did:parseInt(NI.did),maglicUsed:NI.maglicUsed,unload:NI.unload,items:items,sub:sub,tgst:tgst,grand:sub+tgst,r6:r6Id});
+  closeM();toast('✅ Invoice '+invId+' + RE-6 '+r6Id+' created!');goPage('invoices');
+}
+
+// ============================================================
+// A4 INVOICE — clean letterhead, no transport section
+// ============================================================
+function buildInvHTML(inv){
+  var party=gP(inv.pid),co=D.co;var same=party.sc===co.sc;
+  var rows='';
+  for(var i=0;i<inv.items.length;i++){
+    var item=inv.items[i];
+    rows+='<tr style="background:'+(i%2===0?'#f8f9fb':'#fff')+'">';
+    rows+='<td style="text-align:center;padding:8px;border:1px solid #d1d5db;font-size:11px;font-weight:600">'+(i+1)+'</td>';
+    rows+='<td style="padding:8px;border:1px solid #d1d5db"><div style="font-weight:600;font-size:11px">'+item.pname+'</div><div style="font-size:9px;color:#777;margin-top:1px">HSN: '+(item.hsn||'—')+' &nbsp;|&nbsp; Class '+item.cls+' / Division '+item.div+'</div><div style="font-size:9px;color:#777">Batch: '+item.batch+(item.bdate?' | Mfg: '+fDS(item.bdate):'')+'</div></td>';
+    rows+='<td style="text-align:right;padding:8px;border:1px solid #d1d5db;font-size:11px">'+fI(item.qty)+'</td>';
+    rows+='<td style="text-align:center;padding:8px;border:1px solid #d1d5db;font-size:11px">'+item.unit+'</td>';
+    rows+='<td style="text-align:right;padding:8px;border:1px solid #d1d5db;font-size:11px">'+fN(item.rate)+'</td>';
+    rows+='<td style="text-align:right;padding:8px;border:1px solid #d1d5db;font-size:11px;font-weight:600">'+fN(item.amt)+'</td>';
+    if(same){rows+='<td style="text-align:right;padding:8px;border:1px solid #d1d5db;font-size:10px">'+fN(item.cgst)+'</td><td style="text-align:right;padding:8px;border:1px solid #d1d5db;font-size:10px">'+fN(item.sgst)+'</td>';}
+    else{rows+='<td style="text-align:right;padding:8px;border:1px solid #d1d5db;font-size:10px">'+fN(item.igst)+'</td>';}
+    rows+='<td style="text-align:right;padding:8px;border:1px solid #d1d5db;font-size:11px;font-weight:700;color:#1a3a5c">'+fN(item.tot)+'</td></tr>';
+  }
+  var h='<div style="width:210mm;min-height:297mm;margin:0 auto;padding:12mm 14mm;font-family:\'IBM Plex Sans\',Arial,sans-serif;color:#111;background:#fff;font-size:11pt;line-height:1.4">';
+  // letterhead
+  h+='<div style="border-bottom:3px solid #1a3a5c;padding-bottom:10px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:flex-end">';
+  h+='<div><div style="font-size:20pt;font-weight:700;color:#1a3a5c">'+co.name+'</div><div style="font-size:9.5pt;color:#444;margin-top:3px">'+co.addr+'</div><div style="font-size:9.5pt;color:#444">Ph: '+co.phone+' &nbsp;|&nbsp; Email: '+co.email+'</div><div style="font-size:9.5pt;color:#444">GSTIN: <b>'+co.gstin+'</b> &nbsp;|&nbsp; PAN: <b>'+co.pan+'</b></div></div>';
+  h+='<div style="text-align:right"><div style="font-size:18pt;font-weight:700;color:#1a3a5c;letter-spacing:.08em">TAX INVOICE</div><div style="font-size:10pt;color:#444;margin-top:3px">Invoice No: <b>'+inv.id+'</b></div><div style="font-size:10pt;color:#444">Date: <b>'+fD(inv.date)+'</b></div></div>';
+  h+='</div></div>';
+  // bill to / ship to
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">';
+  h+='<div style="border:1px solid #d1d5db;border-radius:4px;padding:9px 11px"><div style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1a3a5c;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:6px">Bill To</div><div style="font-weight:700;font-size:11pt">'+party.name+'</div><div style="font-size:9.5pt;color:#444;margin-top:2px">'+party.addr+'</div><div style="font-size:9.5pt;color:#444">GSTIN: '+party.gstin+'</div><div style="font-size:9.5pt;color:#444">Explosive Lic: '+party.lic+'</div>'+(party.contact?'<div style="font-size:9.5pt;color:#444">Contact: '+party.contact+' | '+party.phone+'</div>':'')+'</div>';
+  h+='<div style="border:1px solid #d1d5db;border-radius:4px;padding:9px 11px"><div style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1a3a5c;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:6px">Ship To</div><div style="font-weight:700;font-size:11pt">'+party.name+'</div><div style="font-size:9.5pt;color:#444;margin-top:2px">'+(inv.unload||party.addr)+'</div><div style="font-size:9.5pt;color:#444">PASS No: <b style="color:#c8410a">'+inv.pass+'</b></div><div style="font-size:9.5pt;color:#444">Supply Type: '+(same?'Intra-State (Maharashtra)':'Inter-State')+'</div></div>';
+  h+='</div>';
+  // items table
+  h+='<table style="width:100%;border-collapse:collapse;margin-bottom:12px"><thead><tr style="background:#1a3a5c">';
+  h+='<th style="color:#fff;padding:8px;text-align:center;font-size:9pt;width:26px">#</th>';
+  h+='<th style="color:#fff;padding:8px;text-align:left;font-size:9pt">Product Description</th>';
+  h+='<th style="color:#fff;padding:8px;text-align:right;font-size:9pt">Qty</th>';
+  h+='<th style="color:#fff;padding:8px;text-align:center;font-size:9pt">Unit</th>';
+  h+='<th style="color:#fff;padding:8px;text-align:right;font-size:9pt">Rate (₹)</th>';
+  h+='<th style="color:#fff;padding:8px;text-align:right;font-size:9pt">Taxable (₹)</th>';
+  if(same){h+='<th style="color:#fff;padding:8px;text-align:right;font-size:9pt">CGST (₹)</th><th style="color:#fff;padding:8px;text-align:right;font-size:9pt">SGST (₹)</th>';}
+  else{h+='<th style="color:#fff;padding:8px;text-align:right;font-size:9pt">IGST (₹)</th>';}
+  h+='<th style="color:#fff;padding:8px;text-align:right;font-size:9pt">Total (₹)</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  // totals
+  h+='<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><div style="min-width:260px;border:1px solid #d1d5db;border-radius:4px;overflow:hidden">';
+  h+='<div style="display:flex;justify-content:space-between;padding:7px 11px;font-size:10.5pt;border-bottom:1px solid #e5e7eb"><span style="color:#555">Taxable Amount</span><span style="font-family:\'IBM Plex Mono\',monospace">₹ '+fN(inv.sub)+'</span></div>';
+  if(same){h+='<div style="display:flex;justify-content:space-between;padding:7px 11px;font-size:10.5pt;border-bottom:1px solid #e5e7eb"><span style="color:#555">CGST @ 9%</span><span style="font-family:\'IBM Plex Mono\',monospace">₹ '+fN(inv.tgst/2)+'</span></div><div style="display:flex;justify-content:space-between;padding:7px 11px;font-size:10.5pt;border-bottom:1px solid #e5e7eb"><span style="color:#555">SGST @ 9%</span><span style="font-family:\'IBM Plex Mono\',monospace">₹ '+fN(inv.tgst/2)+'</span></div>';}
+  else{h+='<div style="display:flex;justify-content:space-between;padding:7px 11px;font-size:10.5pt;border-bottom:1px solid #e5e7eb"><span style="color:#555">IGST @ 18%</span><span style="font-family:\'IBM Plex Mono\',monospace">₹ '+fN(inv.tgst)+'</span></div>';}
+  h+='<div style="display:flex;justify-content:space-between;padding:9px 11px;font-size:12pt;font-weight:700;background:#1a3a5c;color:#fff"><span>Grand Total</span><span style="font-family:\'IBM Plex Mono\',monospace">₹ '+fN(inv.grand)+'</span></div>';
+  h+='</div></div>';
+  // amount in words
+  h+='<div style="background:#f8f9fb;border:1px solid #e5e7eb;border-radius:4px;padding:8px 11px;font-size:9.5pt;margin-bottom:12px"><b>Amount in Words:</b> '+n2w(inv.grand)+'</div>';
+  // bank
+  if(co.bank){h+='<div style="background:#f8f9fb;border:1px solid #e5e7eb;border-radius:4px;padding:8px 11px;font-size:9.5pt;margin-bottom:12px"><b>Bank:</b> '+co.bank+' &nbsp;|&nbsp; <b>A/C No:</b> '+co.acc+' &nbsp;|&nbsp; <b>IFSC:</b> '+co.ifsc+'</div>';}
+  // terms + sig
+  h+='<div style="border-top:1px solid #e5e7eb;padding-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:20px">';
+  h+='<div><div style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#555;margin-bottom:5px">Terms &amp; Conditions</div><div style="font-size:9pt;color:#666;line-height:1.6">1. Goods once sold will not be taken back.<br>2. Subject to Satara jurisdiction.<br>3. PASS must accompany this invoice during transport.<br>4. Explosives to be used only at licensed site.</div></div>';
+  h+='<div style="text-align:right"><div style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#555;margin-bottom:40px">For '+co.name+'</div><div style="border-top:1px solid #555;padding-top:5px;font-size:9pt;color:#444">Authorised Signatory</div></div>';
+  h+='</div>';
+  h+='<div style="text-align:center;margin-top:12px;padding-top:8px;border-top:1px solid #eee;font-size:8.5pt;color:#999">Computer generated invoice &nbsp;|&nbsp; RE-6 Ref: '+inv.r6+' &nbsp;|&nbsp; GSTIN: '+co.gstin+'</div>';
+  h+='</div>';
+  return h;
+}
+
+function viewInv(id){
+  var inv=null;for(var i=0;i<D.invoices.length;i++){if(D.invoices[i].id===id){inv=D.invoices[i];break;}}if(!inv)return;
+  openM('GST Invoice — '+id,buildInvHTML(inv),'<button class="btn bo bsm" onclick="closeM()">Close</button><button class="btn ba bsm" onclick="closeM();viewRE6(\''+inv.r6+'\')">📋 View RE-6</button><button class="btn bg bsm" onclick="printInv(\''+id+'\')">⬇ Download PDF</button>');
+}
+function printInv(id){
+  var inv=null;for(var i=0;i<D.invoices.length;i++){if(D.invoices[i].id===id){inv=D.invoices[i];break;}}if(!inv)return;
+  var w=window.open('','_blank','width=900,height=750');if(!w){toast('⚠ Allow popups');return;}
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice '+id+'</title><style>@import url(\'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap\');*{box-sizing:border-box}body{margin:0;padding:0;background:#fff}@media print{@page{size:A4;margin:0}body{margin:0}}</style><script>window.onload=function(){window.print()}<\/script></head><body>'+buildInvHTML(inv)+'</body></html>');
+  w.document.close();
+}
+
+// ============================================================
+// RE-6 LIST
+// ============================================================
+function pgRE6(){
+  var h='<div class="phd"><div><div class="pt">RE-6 Register</div><div class="ps">Rule 61(2) — Explosives Rules 2008 — Auto-generated on invoice save</div></div></div>';
+  h+='<div class="al ali">Van Licence ('+D.vehicles.map(function(v){return v.explicform;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join('/')+') and Magazine Licence are stored separately per RE-6 record. Date of unloading is blank — to be filled manually after delivery.</div>';
+  h+='<div class="card" style="margin-bottom:0"><div style="overflow-x:auto"><table class="t"><thead><tr><th>RE-6 No.</th><th>Invoice</th><th>Date</th><th>PASS No.</th><th>Van No.</th><th>Van Lic. (Form)</th><th>Magazine Lic.</th><th>Driver</th><th>Consignee</th><th>Actions</th></tr></thead><tbody>';
+  var r6=D.re6list.slice().reverse();
+  for(var i=0;i<r6.length;i++){
+    var r=r6[i];var inv=null;for(var j=0;j<D.invoices.length;j++){if(D.invoices[j].id===r.iid){inv=D.invoices[j];break;}}
+    var party=inv?gP(inv.pid):{};var veh=gV(r.vid);var drv=gDr(r.did);
+    h+='<tr><td class="mono" style="color:var(--ac);font-weight:700">'+r.id+'</td><td class="mono" style="color:var(--bm)">'+r.iid+'</td><td style="font-size:10px">'+fD(r.date)+'</td><td class="mono">'+r.pass+'</td><td class="mono" style="font-weight:600">'+(veh.no||'—')+'</td>';
+    h+='<td style="font-size:9px"><span class="mono" style="color:var(--ac);font-weight:600">'+(r.vanlicUsed||'—')+'</span><br><span style="color:var(--t3)">('+r.vanlicformUsed+')</span></td>';
+    h+='<td class="mono" style="font-size:9px;color:var(--bm)">'+(r.maglicUsed||'—')+'</td>';
+    h+='<td style="font-size:10px">'+(drv.name||'—')+'</td><td style="font-size:10px">'+(party.name||'—')+'</td>';
+    h+='<td><div class="act"><button class="btn ba bsm" onclick="viewRE6(\''+r.id+'\')">View</button><button class="btn bg bsm" onclick="printRE6(\''+r.id+'\')">⬇ PDF</button></div></td></tr>';
+  }
+  h+='</tbody></table></div></div>';
+  return h;
+}
+
+// ============================================================
+// RE-6 A4 GOVERNMENT FORM
+// Row 13 (Date of unloading) is ALWAYS blank — filled manually
+// ============================================================
+function buildRE6HTML(r,inv){
+  var co=D.co,party=gP(inv.pid),veh=gV(r.vid),drv=gDr(r.did);
+  var expRows='';
+  for(var i=0;i<inv.items.length;i++){
+    var item=inv.items[i];
+    expRows+='<tr><td style="padding:6px 8px;border:1px solid #aaa;text-align:left">'+item.pname+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center">'+item.cls+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center">'+item.div+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center;font-family:monospace;font-size:9.5pt">'+item.batch+(item.bdate?'<br><span style="font-size:8.5pt;color:#555">'+fDS(item.bdate)+'</span>':'')+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center">'+fI(item.qty)+' '+item.unit+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center">'+item.cases+'</td></tr>';
+  }
+  var h='<div style="width:210mm;min-height:297mm;margin:0 auto;padding:12mm 14mm;font-family:\'Bookman Old Style\',Georgia,\'Times New Roman\',serif;font-size:11pt;color:#000;background:#fff">';
+  // title
+  h+='<div style="text-align:center;border-bottom:2.5px solid #000;padding-bottom:8px;margin-bottom:8px"><div style="font-size:17pt;font-weight:bold;letter-spacing:.05em">FORM RE–6</div><div style="font-size:9.5pt;margin-top:3px">(See rule 61(2) of the Explosives Rules, 2008)</div><div style="font-size:10.5pt;margin-top:2px">Form of records to be maintained by a licensee</div><div style="font-size:10.5pt">Records of explosives transported by road van</div></div>';
+  // meta — van licence number + form (LE-7 etc) from vehicle record
+  h+='<div style="border-bottom:1px solid #aaa;padding-bottom:6px;margin-bottom:0">';
+  h+='<p style="font-size:8.5pt;color:#666;margin:1px 0">Note — This record should be kept up to date.</p>';
+  h+='<p style="font-size:10.5pt;margin:3px 0">Licence number <b>'+(r.vanlicUsed||'_______________________')+'</b> in Form <b>'+(r.vanlicformUsed||'LE-7')+'</b> of Explosives Rules, 2008</p>';
+  h+='<p style="font-size:10.5pt;margin:3px 0">Explosives Road Van No. <b>'+veh.no+'</b></p>';
+  h+='</div>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:10.5pt">';
+  // 1
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;width:26px;background:#f5f5f5;padding:5px 3px;vertical-align:middle">1</td><td style="border:1px solid #aaa;padding:5px 8px;width:172px;font-size:9.5pt;color:#333">Date</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;font-weight:bold">'+fD(r.date)+'</td></tr>';
+  // 2 — consignor + magazine licence separate
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle" rowspan="2">2</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333" rowspan="2">Name, address and license number of the consignor</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;font-weight:bold"><b>'+co.name+'</b><br>'+co.addr+'<br>GSTIN: '+co.gstin+'</td></tr>';
+  h+='<tr><td style="border:1px solid #aaa;padding:5px 8px;font-size:9pt;color:#444;width:160px">Dispatched from Magazine<br>Magazine Licence No.</td><td style="border:1px solid #aaa;padding:5px 8px;font-weight:bold;font-size:11.5pt;color:#1a3a5c">'+(r.maglicUsed||'_______________________')+'</td></tr>';
+  // 3
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">3</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">Place of loading</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px">'+r.load+'</td></tr>';
+  // explosives header
+  h+='<tr><td colspan="4" style="border:1px solid #aaa;padding:4px 8px;background:#e8e8e8;font-weight:bold;font-size:9.5pt;text-align:center">Description of explosives</td></tr>';
+  // 4–8
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">4–8</td><td colspan="3" style="border:1px solid #aaa;padding:0"><table style="width:100%;border-collapse:collapse;font-size:9.5pt"><thead><tr><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:left">Name and Description (4)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Class (5)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Division (6)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Batch No. &amp; Date (7)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Qty Transported (8)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Cases/Packets</th></tr></thead><tbody>'+expRows+'</tbody></table></td></tr>';
+  // 9 PASS
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">9</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">PASS Number</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;font-size:13pt;font-weight:bold;color:#c8410a">'+r.pass+'</td></tr>';
+  // 10 sig consignor
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">10</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">Signature of the consignor</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;height:60px;vertical-align:bottom"><div style="border-bottom:1px solid #555;margin:0 8px;height:36px"></div><div style="font-size:9pt;text-align:center;color:#555">'+co.name+'</div></td></tr>';
+  // 11 consignee
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">11</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">Name and address of the consignee</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;font-weight:bold"><b>'+party.name+'</b><br>'+party.addr+'<br>License No: <b>'+party.lic+'</b></td></tr>';
+  // 12 unloading place
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">12</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">Place of unloading</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px">'+r.unload+'</td></tr>';
+  // 13 date of unloading — ALWAYS BLANK for manual fill
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">13</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">Date of unloading of explosives</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;height:40px">&nbsp;</td></tr>';
+  // 14 sig consignee
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">14</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">Signature of consignee</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;height:60px;vertical-align:bottom"><div style="border-bottom:1px solid #555;margin:0 8px;height:36px"></div><div style="font-size:9pt;text-align:center;color:#555">'+party.name+'</div></td></tr>';
+  // 15 remarks
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">15</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">Remarks</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;height:36px">'+(r.rem||'&nbsp;')+'</td></tr>';
+  h+='</table>';
+  h+='<div style="padding:5px 0;font-size:8pt;color:#888;text-align:center;border-top:1px solid #ccc;margin-top:4px">Record No: '+r.id+' &nbsp;|&nbsp; Invoice: '+inv.id+' &nbsp;|&nbsp; Driver: '+drv.name+' &nbsp;|&nbsp; DL: '+drv.dl+(drv.badge?' &nbsp;|&nbsp; Badge: '+drv.badge:'')+'</div>';
+  h+='</div>';
+  return h;
+}
+
+function viewRE6(id){
+  var r=null;for(var i=0;i<D.re6list.length;i++){if(D.re6list[i].id===id){r=D.re6list[i];break;}}if(!r){toast('RE-6 not found');return;}
+  var inv=null;for(var i=0;i<D.invoices.length;i++){if(D.invoices[i].id===r.iid){inv=D.invoices[i];break;}}if(!inv)return;
+  openM('FORM RE-6 — '+id,buildRE6HTML(r,inv),'<button class="btn bo bsm" onclick="closeM()">Close</button><button class="btn bo bsm" onclick="closeM();viewInv(\''+inv.id+'\')">View Invoice</button><button class="btn bg bsm" onclick="printRE6(\''+id+'\')">⬇ Download RE-6 PDF</button>');
+}
+function printRE6(id){
+  var r=null;for(var i=0;i<D.re6list.length;i++){if(D.re6list[i].id===id){r=D.re6list[i];break;}}if(!r)return;
+  var inv=null;for(var i=0;i<D.invoices.length;i++){if(D.invoices[i].id===r.iid){inv=D.invoices[i];break;}}if(!inv)return;
+  var w=window.open('','_blank','width=900,height=750');if(!w){toast('⚠ Allow popups');return;}
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>RE-6 '+id+'</title><style>*{box-sizing:border-box}body{margin:0;padding:0;background:#fff}@media print{@page{size:A4;margin:0}body{margin:0}}</style><script>window.onload=function(){window.print()}<\/script></head><body>'+buildRE6HTML(r,inv)+'</body></html>');
+  w.document.close();
+}
+
+// ============================================================
+// INVENTORY
+// ============================================================
+function pgStock(){
+  var low=[];for(var i=0;i<D.stock.length;i++){if(D.stock[i].qty<=D.stock[i].min)low.push(D.stock[i]);}
+  var h='<div class="phd"><div><div class="pt">Inventory</div></div><button class="btn bp" onclick="openAddBatch()">+ Add Batch</button></div>';
+  if(low.length)h+='<div class="al alw">⚠ Low stock on '+low.length+' batch(es)</div>';
+  h+='<div class="card" style="margin-bottom:0"><div style="overflow-x:auto"><table class="t"><thead><tr><th>Product</th><th>Class/Div</th><th>Batch</th><th>Mfg. Date</th><th>Stock</th><th>Min</th><th>Status</th></tr></thead><tbody>';
+  for(var i=0;i<D.stock.length;i++){var s=D.stock[i],pr=gPr(s.pid);var lw=s.qty<=s.min,md=s.qty<=s.min*1.5;h+='<tr><td style="font-weight:600">'+pr.name+'</td><td><span class="bx xb">'+pr.cls+'/'+pr.div+'</span></td><td class="mono">'+s.batch+'</td><td style="font-size:10px;color:var(--t2)">'+fD(s.mfg)+'</td><td class="mono" style="font-weight:700;color:'+(lw?'var(--dc)':md?'var(--wc)':'var(--sc)')+'">'+fI(s.qty)+' '+s.unit+'</td><td class="mono" style="color:var(--t3)">'+s.min+' '+s.unit+'</td><td><span class="bx '+(lw?'xr':md?'xa':'xg')+'">'+(lw?'Low':md?'Adequate':'Good')+'</span></td></tr>';}
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function openAddBatch(){
+  var opts='';for(var i=0;i<D.products.length;i++){opts+='<option value="'+D.products[i].id+'">'+D.products[i].name+'</option>';}
+  openM('Add Batch','<div class="fg"><label class="fl r">Product</label><select class="fi" id="ib-p"><option value="">Select...</option>'+opts+'</select></div><div class="fr"><div class="fg"><label class="fl r">Batch No.</label><input class="fi" id="ib-b"></div><div class="fg"><label class="fl r">Mfg. Date</label><input class="fi" type="date" id="ib-d" value="'+toStr()+'"></div></div><div class="fr"><div class="fg"><label class="fl r">Opening Qty</label><input class="fi" type="number" id="ib-q"></div><div class="fg"><label class="fl">Min. Threshold</label><input class="fi" type="number" id="ib-m" placeholder="200"></div></div>','<button class="btn bo bsm" onclick="closeM()">Cancel</button><button class="btn bp bsm" onclick="saveBatch()">Save</button>');
+}
+function saveBatch(){var pid=document.getElementById('ib-p').value,b=document.getElementById('ib-b').value,d=document.getElementById('ib-d').value,q=parseFloat(document.getElementById('ib-q').value);if(!pid||!b||!d||!q){toast('⚠ Fill required fields');return;}var pr=gPr(pid);D.stock.push({id:Date.now(),pid:parseInt(pid),batch:b,mfg:d,qty:q,unit:pr.unit,min:parseFloat(document.getElementById('ib-m').value)||200});closeM();toast('✅ Batch added');goPage('inventory');}
+
+// ============================================================
+// DRIVERS
+// ============================================================
+var eDid=null;
+function pgDrv(){
+  var h='<div class="phd"><div><div class="pt">Drivers</div></div><button class="btn bp" onclick="openDrv(null)">+ Add Driver</button></div>';
+  h+='<div class="card" style="margin-bottom:0"><div style="overflow-x:auto"><table class="t"><thead><tr><th></th><th>Name</th><th>Phone</th><th>DL No.</th><th>Type</th><th>DL Expiry</th><th>Badge</th><th>Vehicle</th><th>Status</th><th></th></tr></thead><tbody>';
+  for(var i=0;i<D.drivers.length;i++){var d=D.drivers[i],veh=gV(d.vid);h+='<tr><td><div class="avt">'+inits(d.name)+'</div></td><td style="font-weight:600;font-size:11px">'+d.name+'<div style="font-size:9px;color:var(--t3)">'+(d.addr||'')+'</div></td><td class="mono">'+d.phone+'</td><td class="mono">'+d.dl+'</td><td style="font-size:10px">'+d.dltype+'</td><td>'+expBadge(d.dlexp)+'</td><td class="mono" style="font-size:9px">'+(d.badge||'—')+'</td><td>'+(veh.no&&veh.no!=='—'?'<span class="bx xb mono">'+veh.no+'</span>':'<span style="color:var(--t3)">—</span>')+'</td><td>'+stBadge(d.status)+'</td><td><div class="act"><button class="btn bo bsm" onclick="openDrv('+d.id+')">Edit</button><button class="btn bd bsm" onclick="delDrv('+d.id+')">Del</button></div></td></tr>';}
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function openDrv(id){
+  eDid=id;var d={};if(id){for(var i=0;i<D.drivers.length;i++){if(D.drivers[i].id===id){d=D.drivers[i];break;}}}
+  var vopts='<option value="">— Not assigned —</option>';for(var i=0;i<D.vehicles.length;i++){vopts+='<option value="'+D.vehicles[i].id+'"'+(d.vid===D.vehicles[i].id?' selected':'')+'>'+D.vehicles[i].no+'</option>';}
+  var dtypes=['HMV','LMV','HMV+LMV','Transport Vehicle'];var dtopts='';for(var i=0;i<dtypes.length;i++){dtopts+='<option'+((d.dltype||'HMV')===dtypes[i]?' selected':'')+'>'+dtypes[i]+'</option>';}
+  var ss=['active','inactive','on-leave'];var sl={active:'Active',inactive:'Inactive','on-leave':'On Leave'};var sopts='';for(var i=0;i<ss.length;i++){sopts+='<option value="'+ss[i]+'"'+((d.status||'active')===ss[i]?' selected':'')+'>'+sl[ss[i]]+'</option>';}
+  var body='<div class="fr"><div class="fg"><label class="fl r">Full Name</label><input class="fi" id="df-n" value="'+(d.name||'')+'"></div><div class="fg"><label class="fl r">Phone</label><input class="fi" id="df-ph" value="'+(d.phone||'')+'"></div></div><div class="fr"><div class="fg"><label class="fl">Address</label><input class="fi" id="df-a" value="'+(d.addr||'')+'"></div><div class="fg"><label class="fl">Aadhar</label><input class="fi" id="df-adh" value="'+(d.aadhar||'')+'"></div></div><div class="slbl">Licence</div><div class="fr"><div class="fg"><label class="fl r">DL Number</label><input class="fi" id="df-dl" value="'+(d.dl||'')+'"></div><div class="fg"><label class="fl r">DL Type</label><select class="fi" id="df-dlt">'+dtopts+'</select></div></div><div class="fr"><div class="fg"><label class="fl">DL Issue</label><input class="fi" type="date" id="df-dli" value="'+(d.dlissue||'')+'"></div><div class="fg"><label class="fl r">DL Expiry</label><input class="fi" type="date" id="df-dle" value="'+(d.dlexp||'')+'"></div></div><div class="fr"><div class="fg"><label class="fl">PESO Badge No.</label><input class="fi" id="df-bg" value="'+(d.badge||'')+'"></div><div class="fg"><label class="fl">Badge Expiry</label><input class="fi" type="date" id="df-bge" value="'+(d.badgeexp||'')+'"></div></div><div class="slbl">Assignment</div><div class="fr"><div class="fg"><label class="fl">Assign Vehicle</label><select class="fi" id="df-v">'+vopts+'</select></div><div class="fg"><label class="fl">Status</label><select class="fi" id="df-st">'+sopts+'</select></div></div>';
+  openM(id?'Edit Driver':'Add Driver',body,'<button class="btn bo bsm" onclick="closeM()">Cancel</button><button class="btn bp bsm" onclick="saveDrv()">'+(id?'Update':'Save')+'</button>');
+}
+function saveDrv(){var n=document.getElementById('df-n').value.trim(),ph=document.getElementById('df-ph').value.trim(),dl=document.getElementById('df-dl').value.trim(),dlt=document.getElementById('df-dlt').value,dle=document.getElementById('df-dle').value;if(!n||!ph||!dl||!dlt||!dle){toast('⚠ Fill required fields');return;}var obj={name:n,phone:ph,addr:document.getElementById('df-a').value,aadhar:document.getElementById('df-adh').value,dl:dl,dltype:dlt,dlissue:document.getElementById('df-dli').value,dlexp:dle,badge:document.getElementById('df-bg').value,badgeexp:document.getElementById('df-bge').value,vid:parseInt(document.getElementById('df-v').value)||null,status:document.getElementById('df-st').value};if(eDid){for(var i=0;i<D.drivers.length;i++){if(D.drivers[i].id===eDid){for(var k in obj)D.drivers[i][k]=obj[k];break;}}toast('✅ Updated');}else{obj.id=Date.now();D.drivers.push(obj);toast('✅ Added');}closeM();goPage('drivers');}
+function delDrv(id){if(!confirm('Delete driver?'))return;D.drivers=D.drivers.filter(function(d){return d.id!==id;});toast('Removed');goPage('drivers');}
+
+// ============================================================
+// VEHICLES — Explosive licence + licence form (LE-7) per vehicle
+// ============================================================
+var eVid=null;
+function pgVeh(){
+  var h='<div class="phd"><div><div class="pt">Vehicle Register</div><div class="psub">Explosive van licence &amp; form (LE-7 etc.) stored per vehicle — shown on RE-6</div></div><button class="btn bp" onclick="openVeh(null)">+ Add Vehicle</button></div>';
+  h+='<div class="card" style="margin-bottom:0"><div style="overflow-x:auto"><table class="t"><thead><tr><th></th><th>Vehicle No.</th><th>Type</th><th>RC No.</th><th>Explosive Van Licence</th><th>Licence Form</th><th>Lic. Expiry</th><th>Ins. Expiry</th><th>Permit Exp.</th><th>Status</th><th></th></tr></thead><tbody>';
+  for(var i=0;i<D.vehicles.length;i++){var v=D.vehicles[i];
+    h+='<tr><td><div class="vic">🚛</div></td>';
+    h+='<td class="mono" style="font-weight:700">'+v.no+'</td>';
+    h+='<td style="font-size:10px">'+v.type+'</td>';
+    h+='<td class="mono">'+v.rc+'</td>';
+    h+='<td class="mono" style="font-weight:700;color:var(--ac);font-size:9px">'+(v.explics||'<span style="color:var(--t3)">Not set</span>')+'</td>';
+    h+='<td><span class="bx xb" style="font-size:9px">'+(v.explicform||'LE-7')+'</span></td>';
+    h+='<td>'+expBadge(v.explicexp)+'</td>';
+    h+='<td>'+expBadge(v.insexp)+'</td>';
+    h+='<td>'+expBadge(v.permitexp)+'</td>';
+    h+='<td>'+stBadge(v.status)+'</td>';
+    h+='<td><div class="act"><button class="btn bo bsm" onclick="openVeh('+v.id+')">Edit</button><button class="btn bd bsm" onclick="delVeh('+v.id+')">Del</button></div></td></tr>';
+  }
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function openVeh(id){
+  eVid=id;var v={};if(id){for(var i=0;i<D.vehicles.length;i++){if(D.vehicles[i].id===id){v=D.vehicles[i];break;}}}
+  var vtypes=['Truck (HMV)','Mini Truck (LMV)','Tempo / Pick-up','Tanker','Other'];var vtopts='<option value="">Select...</option>';for(var i=0;i<vtypes.length;i++){vtopts+='<option'+((v.type||'')==vtypes[i]?' selected':'')+'>'+vtypes[i]+'</option>';}
+  var owns=['Own','Hired','Contract'];var oopts='';for(var i=0;i<owns.length;i++){oopts+='<option'+((v.own||'Own')===owns[i]?' selected':'')+'>'+owns[i]+'</option>';}
+  var ss=['active','maintenance','inactive'];var sl={active:'Active',maintenance:'Under Maintenance',inactive:'Inactive'};var sopts='';for(var i=0;i<ss.length;i++){sopts+='<option value="'+ss[i]+'"'+((v.status||'active')===ss[i]?' selected':'')+'>'+sl[ss[i]]+'</option>';}
+  // Licence form options — LE-7 is for transport vans
+  var licforms=['LE-7','LE-6','LE-4','Other'];var lfopts='';for(var i=0;i<licforms.length;i++){lfopts+='<option'+((v.explicform||'LE-7')===licforms[i]?' selected':'')+'>'+licforms[i]+'</option>';}
+  var body='<div class="slbl">Vehicle Identity</div>';
+  body+='<div class="fr"><div class="fg"><label class="fl r">Vehicle Number</label><input class="fi" id="vf-no" value="'+(v.no||'')+'" oninput="this.value=this.value.toUpperCase()" placeholder="MH11 AB 1234"></div><div class="fg"><label class="fl r">Type</label><select class="fi" id="vf-ty">'+vtopts+'</select></div></div>';
+  body+='<div class="fr"><div class="fg"><label class="fl r">RC Number</label><input class="fi" id="vf-rc" value="'+(v.rc||'')+'"></div><div class="fg"><label class="fl">Ownership</label><select class="fi" id="vf-ow">'+oopts+'</select></div></div>';
+  body+='<div class="fr"><div class="fg"><label class="fl">Make / Model</label><input class="fi" id="vf-md" value="'+(v.model||'')+'"></div><div class="fg"><label class="fl">Year</label><input class="fi" id="vf-yr" type="number" value="'+(v.year||'')+'"></div></div>';
+  body+='<div class="slbl" style="color:var(--ac)">Explosive Van Licence — appears on RE-6 header line</div>';
+  body+='<div class="fr"><div class="fg"><label class="fl r">Explosive Van Licence No.</label><input class="fi" id="vf-el" value="'+(v.explics||'')+'" placeholder="E/HQ/MH/22/XXXX"></div><div class="fg"><label class="fl r">Licence Form</label><select class="fi" id="vf-elf">'+lfopts+'</select></div></div>';
+  body+='<div class="fg"><label class="fl">Licence Expiry Date</label><input class="fi" type="date" id="vf-ele" value="'+(v.explicexp||'')+'"></div>';
+  body+='<div class="slbl">Insurance &amp; PESO Permit</div>';
+  body+='<div class="fr"><div class="fg"><label class="fl r">Insurance Policy No.</label><input class="fi" id="vf-in" value="'+(v.insno||'')+'"></div><div class="fg"><label class="fl r">Insurance Expiry</label><input class="fi" type="date" id="vf-ie" value="'+(v.insexp||'')+'"></div></div>';
+  body+='<div class="fr"><div class="fg"><label class="fl">PESO Permit No.</label><input class="fi" id="vf-pn" value="'+(v.permitno||'')+'"></div><div class="fg"><label class="fl">Permit Expiry</label><input class="fi" type="date" id="vf-pe" value="'+(v.permitexp||'')+'"></div></div>';
+  body+='<div class="fr"><div class="fg"><label class="fl">Fitness Cert. No.</label><input class="fi" id="vf-fn" value="'+(v.fitno||'')+'"></div><div class="fg"><label class="fl">FC Expiry</label><input class="fi" type="date" id="vf-fe" value="'+(v.fitexp||'')+'"></div></div>';
+  body+='<div class="fr"><div class="fg"><label class="fl">Status</label><select class="fi" id="vf-st">'+sopts+'</select></div><div class="fg"><label class="fl">Remarks</label><input class="fi" id="vf-rm" value="'+(v.remarks||'')+'"></div></div>';
+  openM(id?'Edit Vehicle':'Add Vehicle',body,'<button class="btn bo bsm" onclick="closeM()">Cancel</button><button class="btn bp bsm" onclick="saveVeh()">'+(id?'Update':'Save')+'</button>');
+}
+function saveVeh(){
+  var no=document.getElementById('vf-no').value.trim(),ty=document.getElementById('vf-ty').value,rc=document.getElementById('vf-rc').value.trim(),ins=document.getElementById('vf-in').value.trim(),ie=document.getElementById('vf-ie').value;
+  if(!no||!ty||!rc||!ins||!ie){toast('⚠ Fill required fields');return;}
+  var obj={no:no,type:ty,rc:rc,own:document.getElementById('vf-ow').value,model:document.getElementById('vf-md').value,year:document.getElementById('vf-yr').value,explics:document.getElementById('vf-el').value,explicform:document.getElementById('vf-elf').value,explicexp:document.getElementById('vf-ele').value,insno:ins,insexp:ie,permitno:document.getElementById('vf-pn').value,permitexp:document.getElementById('vf-pe').value,fitno:document.getElementById('vf-fn').value,fitexp:document.getElementById('vf-fe').value,status:document.getElementById('vf-st').value,remarks:document.getElementById('vf-rm').value};
+  if(eVid){for(var i=0;i<D.vehicles.length;i++){if(D.vehicles[i].id===eVid){for(var k in obj)D.vehicles[i][k]=obj[k];break;}}toast('✅ Updated');}
+  else{obj.id=Date.now();D.vehicles.push(obj);toast('✅ Added');}
+  closeM();goPage('vehicles');
+}
+function delVeh(id){if(!confirm('Delete vehicle?'))return;D.vehicles=D.vehicles.filter(function(v){return v.id!==id;});toast('Removed');goPage('vehicles');}
+
+// ============================================================
+// PARTIES
+// ============================================================
+var ePid=null;
+function pgParties(){
+  var h='<div class="phd"><div><div class="pt">Parties</div></div><button class="btn bp" onclick="openParty(null)">+ Add Party</button></div>';
+  h+='<div class="card" style="margin-bottom:0"><div style="overflow-x:auto"><table class="t"><thead><tr><th>Name</th><th>GSTIN</th><th>Explosive Lic.</th><th>Contact</th><th>State</th><th>Address</th><th></th></tr></thead><tbody>';
+  for(var i=0;i<D.parties.length;i++){var p=D.parties[i];h+='<tr><td style="font-weight:600">'+p.name+'</td><td class="mono">'+p.gstin+'</td><td class="mono" style="color:var(--ac);font-weight:600">'+p.lic+'</td><td style="font-size:10px">'+p.contact+'<br><span style="color:var(--t3)">'+p.phone+'</span></td><td style="font-size:10px">'+p.state+'</td><td style="font-size:10px;color:var(--t2)">'+p.addr+'</td><td><button class="btn bo bsm" onclick="openParty('+p.id+')">Edit</button></td></tr>';}
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function openParty(id){
+  ePid=id;var p={};if(id){for(var i=0;i<D.parties.length;i++){if(D.parties[i].id===id){p=D.parties[i];break;}}}
+  var body='<div class="fg"><label class="fl r">Party / Company Name</label><input class="fi" id="pa-n" value="'+(p.name||'')+'"></div><div class="fr"><div class="fg"><label class="fl r">GSTIN</label><input class="fi" id="pa-g" value="'+(p.gstin||'')+'" placeholder="27AAAAA0000A1Z5"></div><div class="fg"><label class="fl r">Explosive Licence No.</label><input class="fi" id="pa-l" value="'+(p.lic||'')+'" placeholder="MH/EXP/YYYY/XXXX"></div></div><div class="fg"><label class="fl r">Full Address</label><textarea class="fi" id="pa-a" rows="2">'+(p.addr||'')+'</textarea></div><div class="fr"><div class="fg"><label class="fl">State</label><input class="fi" id="pa-s" value="'+(p.state||'')+'"></div><div class="fg"><label class="fl">State Code</label><input class="fi" id="pa-sc" value="'+(p.sc||'')+'" placeholder="27"></div></div><div class="fr"><div class="fg"><label class="fl">Contact Person</label><input class="fi" id="pa-c" value="'+(p.contact||'')+'"></div><div class="fg"><label class="fl">Phone</label><input class="fi" id="pa-p" type="tel" value="'+(p.phone||'')+'"></div></div>';
+  openM(id?'Edit Party':'Add Party',body,'<button class="btn bo bsm" onclick="closeM()">Cancel</button><button class="btn bp bsm" onclick="saveParty()">'+(id?'Update':'Save')+'</button>');
+}
+function saveParty(){var n=document.getElementById('pa-n').value.trim(),g=document.getElementById('pa-g').value.trim(),l=document.getElementById('pa-l').value.trim();if(!n||!g||!l){toast('⚠ Fill required fields');return;}var obj={name:n,gstin:g,lic:l,addr:document.getElementById('pa-a').value,state:document.getElementById('pa-s').value,sc:document.getElementById('pa-sc').value,contact:document.getElementById('pa-c').value,phone:document.getElementById('pa-p').value};if(ePid){for(var i=0;i<D.parties.length;i++){if(D.parties[i].id===ePid){for(var k in obj)D.parties[i][k]=obj[k];break;}}toast('✅ Updated');}else{obj.id=Date.now();D.parties.push(obj);toast('✅ Added');}closeM();goPage('parties');}
+
+// ============================================================
+// PRODUCTS
+// ============================================================
+var ePrId=null;
+function pgProds(){
+  var h='<div class="phd"><div><div class="pt">Products</div><div class="ps">Default rate auto-fills in invoices</div></div><button class="btn bp" onclick="openProd(null)">+ Add Product</button></div>';
+  h+='<div class="card" style="margin-bottom:0"><div style="overflow-x:auto"><table class="t"><thead><tr><th>Product Name</th><th>Class</th><th>Division</th><th>HSN</th><th>Unit</th><th>Default Rate ₹</th><th>GST%</th><th>Manufacturer</th><th></th></tr></thead><tbody>';
+  for(var i=0;i<D.products.length;i++){var p=D.products[i];h+='<tr><td style="font-weight:600">'+p.name+'</td><td><span class="bx xr">Cl.'+p.cls+'</span></td><td><span class="bx xa">Div '+p.div+'</span></td><td class="mono">'+p.hsn+'</td><td><span class="bx xgr">'+p.unit+'</span></td><td class="mono" style="font-weight:700;color:var(--sc)">₹'+fN(p.rate||0)+'</td><td class="mono" style="color:var(--bm);font-weight:600">'+p.gst+'%</td><td style="font-size:10px;color:var(--t2)">'+p.mfr+'</td><td><div class="act"><button class="btn bo bsm" onclick="openProd('+p.id+')">Edit</button><button class="btn bd bsm" onclick="delProd('+p.id+')">Del</button></div></td></tr>';}
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function openProd(id){
+  ePrId=id;var p={};if(id){for(var i=0;i<D.products.length;i++){if(D.products[i].id===id){p=D.products[i];break;}}}
+  var units=['Kg','Nos','Meter','Box','Litre','MT'];var uopts='';for(var i=0;i<units.length;i++){uopts+='<option'+((p.unit||'Kg')===units[i]?' selected':'')+'>'+units[i]+'</option>';}
+  var gsts=[5,12,18,28];var gopts='';for(var i=0;i<gsts.length;i++){gopts+='<option value="'+gsts[i]+'"'+((p.gst||18)===gsts[i]?' selected':'')+'>'+gsts[i]+'%</option>';}
+  var stdDivs=['1A','1B','1C','1D','1E','1F','1G'];
+  var divLabels={'1A':'1A — Mass explosion hazard','1B':'1B — Projection hazard','1C':'1C — Fire hazard','1D':'1D — Minor explosion hazard','1E':'1E — Very insensitive','1F':'1F — Extremely insensitive','1G':'1G — Fire, no blast'};
+  var curDiv=p.div||'1D';var isCustomDiv=stdDivs.indexOf(curDiv)===-1;
+  var dopts='';for(var i=0;i<stdDivs.length;i++){dopts+='<option value="'+stdDivs[i]+'"'+(!isCustomDiv&&curDiv===stdDivs[i]?' selected':'')+'>'+divLabels[stdDivs[i]]+'</option>';}
+  dopts+='<option value="custom"'+(isCustomDiv?' selected':'')+'>Custom...</option>';
+  var curCls=p.cls||'1';var stdCls=['1','2','3'];var isCustomCls=stdCls.indexOf(curCls)===-1;
+  var copts='<option value="1"'+(!isCustomCls&&curCls==='1'?' selected':'')+'>Class 1 — Explosives</option><option value="2"'+(!isCustomCls&&curCls==='2'?' selected':'')+'>Class 2 — Flammable Gas</option><option value="3"'+(!isCustomCls&&curCls==='3'?' selected':'')+'>Class 3 — Flammable Liquid</option><option value="custom"'+(isCustomCls?' selected':'')+'>Custom...</option>';
+  var body='<div class="fr"><div class="fg" style="grid-column:1/-1"><label class="fl r">Product Name</label><input class="fi" id="pr-n" value="'+(p.name||'')+'"></div></div>';
+  body+='<div class="fr"><div class="fg"><label class="fl r">Class</label><select class="fi" id="pr-cls" onchange="prToggleCls()">'+copts+'</select><input class="fi" id="pr-cls-c" style="margin-top:4px;'+(isCustomCls?'':'display:none')+'" value="'+(isCustomCls?curCls:'')+'" placeholder="Enter class"></div><div class="fg"><label class="fl r">Division</label><select class="fi" id="pr-div" onchange="prToggleDiv()">'+dopts+'</select><input class="fi" id="pr-div-c" style="margin-top:4px;'+(isCustomDiv?'':'display:none')+'" value="'+(isCustomDiv?curDiv:'')+'" placeholder="Enter division"></div></div>';
+  body+='<div class="fr"><div class="fg"><label class="fl r">HSN Code</label><input class="fi" id="pr-h" value="'+(p.hsn||'')+'"></div><div class="fg"><label class="fl r">Unit</label><select class="fi" id="pr-u">'+uopts+'</select></div></div>';
+  body+='<div class="fr"><div class="fg"><label class="fl r">Default Rate (₹ per unit)</label><input class="fi" id="pr-r" type="number" min="0" value="'+(p.rate||'')+'" placeholder="Auto-fills in invoice, editable anytime"></div><div class="fg"><label class="fl r">GST Rate</label><select class="fi" id="pr-g">'+gopts+'</select></div></div>';
+  body+='<div class="fg"><label class="fl">Manufacturer</label><input class="fi" id="pr-m" value="'+(p.mfr||'')+'"></div>';
+  openM(id?'Edit Product':'Add Product',body,'<button class="btn bo bsm" onclick="closeM()">Cancel</button><button class="btn bp bsm" onclick="saveProd()">'+(id?'Update':'Save')+'</button>');
+}
+function prToggleCls(){var s=document.getElementById('pr-cls'),c=document.getElementById('pr-cls-c');if(s&&c)c.style.display=s.value==='custom'?'':'none';}
+function prToggleDiv(){var s=document.getElementById('pr-div'),c=document.getElementById('pr-div-c');if(s&&c)c.style.display=s.value==='custom'?'':'none';}
+function saveProd(){var n=document.getElementById('pr-n').value.trim(),h=document.getElementById('pr-h').value.trim();if(!n||!h){toast('⚠ Fill required fields');return;}var cs=document.getElementById('pr-cls').value;var cls=cs==='custom'?(document.getElementById('pr-cls-c').value.trim()||'1'):cs;var ds=document.getElementById('pr-div').value;var div=ds==='custom'?(document.getElementById('pr-div-c').value.trim()||'1D'):ds;var obj={name:n,cls:cls,div:div,hsn:h,unit:document.getElementById('pr-u').value,rate:parseFloat(document.getElementById('pr-r').value)||0,gst:parseInt(document.getElementById('pr-g').value),mfr:document.getElementById('pr-m').value};if(ePrId){for(var i=0;i<D.products.length;i++){if(D.products[i].id===ePrId){for(var k in obj)D.products[i][k]=obj[k];break;}}toast('✅ Updated');}else{obj.id=Date.now();D.products.push(obj);toast('✅ Added');}closeM();goPage('products');}
+function delProd(id){if(!confirm('Delete product?'))return;D.products=D.products.filter(function(p){return p.id!==id;});toast('Removed');goPage('products');}
+
+// ============================================================
+// SETTINGS — NO explosive store licence, NO licform
+// Only Magazine Licence (default for RE-6) + bank + company info
+// ============================================================
+function pgSettings(){
+  var c=D.co;
+  var h='<div class="phd"><div><div class="pt">Settings</div><div class="ps">Explosive Van Licence &amp; Form (LE-7) are set per vehicle in the Vehicle Register</div></div></div>';
+  h+='<div class="al alo">Van licences are managed per vehicle (Vehicles section). Magazine Licence set here is the default for all RE-6 records — override per invoice.</div>';
+  h+='<div class="two">';
+  h+='<div class="card"><div class="ct" style="margin-bottom:12px">Company Information</div>';
+  h+='<div class="fg"><label class="fl">Company Name</label><input class="fi" id="s-n" value="'+c.name+'"></div>';
+  h+='<div class="fg"><label class="fl">Address</label><textarea class="fi" id="s-a" rows="2">'+c.addr+'</textarea></div>';
+  h+='<div class="fr"><div class="fg"><label class="fl">Phone</label><input class="fi" id="s-ph" value="'+c.phone+'"></div><div class="fg"><label class="fl">Email</label><input class="fi" id="s-em" type="email" value="'+c.email+'"></div></div>';
+  h+='<div class="fr"><div class="fg"><label class="fl">GSTIN</label><input class="fi" id="s-g" value="'+c.gstin+'"></div><div class="fg"><label class="fl">PAN</label><input class="fi" id="s-p" value="'+c.pan+'"></div></div>';
+  h+='<div class="fr"><div class="fg"><label class="fl">State</label><input class="fi" id="s-st" value="'+c.state+'"></div><div class="fg"><label class="fl">State Code</label><input class="fi" id="s-sc" value="'+c.sc+'"></div></div>';
+  h+='</div>';
+  h+='<div>';
+  h+='<div class="card"><div class="ct" style="margin-bottom:12px;color:var(--ac)">Magazine Licence (Default for RE-6)</div>';
+  h+='<div class="al ali" style="font-size:10px">This is the <b>magazine (store) licence</b> from which explosives are dispatched. It appears in RE-6 row 2. The van explosive licence (LE-7 etc.) is stored per vehicle in the Vehicle Register.</div>';
+  h+='<div class="fg"><label class="fl">Default Magazine Licence No.</label><input class="fi" id="s-ml" value="'+c.maglic+'" placeholder="E/WC/MH/22/XXX — overridable per invoice"></div>';
+  h+='</div>';
+  h+='<div class="card" style="margin-top:14px"><div class="ct" style="margin-bottom:12px">Bank Details</div>';
+  h+='<div class="fg"><label class="fl">Bank Name</label><input class="fi" id="s-bk" value="'+c.bank+'"></div>';
+  h+='<div class="fr"><div class="fg"><label class="fl">Account No.</label><input class="fi" id="s-ac" value="'+c.acc+'"></div><div class="fg"><label class="fl">IFSC</label><input class="fi" id="s-if" value="'+c.ifsc+'"></div></div>';
+  h+='</div></div></div>';
+  h+='<button class="btn bp" style="margin-top:6px" onclick="saveSettings()">💾 Save Settings</button>';
+  return h;
+}
+function saveSettings(){
+  D.co.name=document.getElementById('s-n').value;
+  D.co.addr=document.getElementById('s-a').value;
+  D.co.phone=document.getElementById('s-ph').value;
+  D.co.email=document.getElementById('s-em').value;
+  D.co.gstin=document.getElementById('s-g').value;
+  D.co.pan=document.getElementById('s-p').value;
+  D.co.state=document.getElementById('s-st').value;
+  D.co.sc=document.getElementById('s-sc').value;
+  D.co.maglic=document.getElementById('s-ml').value;
+  D.co.bank=document.getElementById('s-bk').value;
+  D.co.acc=document.getElementById('s-ac').value;
+  D.co.ifsc=document.getElementById('s-if').value;
+  toast('✅ Settings saved!');
+}
+
+// INIT
+document.getElementById('dstr').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+goPage('dashboard');
+</script>
