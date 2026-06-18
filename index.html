@@ -261,11 +261,21 @@ function loadUserData(){
   return api('/api/me/data').then(function(res){
     if(res.data&&res.data.co&&res.data.invoices&&res.data.re6list){
       D=res.data;
+      migratePartyAddresses();
     }else{
       D=JSON.parse(JSON.stringify(DEFAULT_DATA));
+      migratePartyAddresses();
       saveData();
     }
   });
+}
+function migratePartyAddresses(){
+  if(!D.parties)return;
+  for(var i=0;i<D.parties.length;i++){
+    var p=D.parties[i];
+    if(!p.billAddr)p.billAddr=p.addr||'';
+    if(!p.shipAddr)p.shipAddr=p.unloadAddr||p.addr||'';
+  }
 }
 function saveData(){
   if(!AUTH_TOKEN)return;
@@ -324,6 +334,8 @@ function gP(id){for(var i=0;i<D.parties.length;i++){if(D.parties[i].id==id)retur
 function gPr(id){for(var i=0;i<D.products.length;i++){if(D.products[i].id==id)return D.products[i];}return {};}
 function gV(id){for(var i=0;i<D.vehicles.length;i++){if(D.vehicles[i].id==id)return D.vehicles[i];}return {};}
 function gDr(id){for(var i=0;i<D.drivers.length;i++){if(D.drivers[i].id==id)return D.drivers[i];}return {};}
+function billAddr(p){return (p&&p.billAddr)||((p&&p.addr)||'');}
+function shipAddr(p){return (p&&p.shipAddr)||((p&&p.unloadAddr)||billAddr(p));}
 function inits(n){if(!n)return '??';var p=n.split(' ');return (p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
 function expBadge(d){var n=dl(d);if(!d||n===null)return '<span class="bx xgr">—</span>';if(n<0)return '<span class="bx xr">Expired</span>';if(n<=60)return '<span class="bx xa">'+fD(d)+'</span>';return '<span class="bx xgr">'+fD(d)+'</span>';}
 function stBadge(s){var m={active:'xg',inactive:'xr','on-leave':'xa',maintenance:'xa'};var l={active:'Active',inactive:'Inactive','on-leave':'On Leave',maintenance:'Maintenance'};return '<span class="bx '+(m[s]||'xgr')+'">'+(l[s]||s)+'</span>';}
@@ -473,7 +485,7 @@ function niSelProd(i,val){
 function niAddRow(){NI.rows.push({pid:'',pname:'',batch:'',bdate:'',qty:'',rate:'',unit:'',gst:18,cases:'',hsn:'',cls:'',div:''});buildInvModal();}
 function niDelRow(i){NI.rows.splice(i,1);if(!NI.rows.length)NI.rows.push({pid:'',pname:'',batch:'',bdate:'',qty:'',rate:'',unit:'',gst:18,cases:'',hsn:'',cls:'',div:''});buildInvModal();}
 function niAutoDriver(vid){var v2=parseInt(vid);for(var i=0;i<D.drivers.length;i++){if(D.drivers[i].vid===v2&&D.drivers[i].status==='active'){NI.did=D.drivers[i].id;break;}}buildInvModal();}
-function niAutoUnload(pid){var p=gP(pid);if(p&&p.name&&!NI.unload)NI.unload=p.name+', '+p.addr;buildInvModal();}
+function niAutoUnload(pid){var p=gP(pid);if(p&&p.name)NI.unload=shipAddr(p);buildInvModal();}
 
 function saveInv(){
   if(!NI.pid||!NI.pass||!NI.vid||!NI.did){toast('⚠ Fill all required fields');return;}
@@ -492,8 +504,8 @@ function saveInv(){
   var veh=gV(parseInt(NI.vid));
   // RE-6 stores vanlicUsed + vanlicformUsed from vehicle, maglicUsed from form
   // unloaddate intentionally left BLANK so it can be filled manually after delivery
-  D.re6list.push({id:r6Id,iid:invId,date:NI.date,pass:NI.pass,vid:parseInt(NI.vid),did:parseInt(NI.did),vanlicUsed:veh.explics||'',vanlicformUsed:veh.explicform||'LE-7',maglicUsed:NI.maglicUsed||D.co.maglic||'',load:D.co.addr,unload:NI.unload||(party.name+', '+party.addr),unloaddate:'',rem:''});
-  D.invoices.push({id:invId,date:NI.date,pid:parseInt(NI.pid),pass:NI.pass,vid:parseInt(NI.vid),did:parseInt(NI.did),maglicUsed:NI.maglicUsed,unload:NI.unload,items:items,sub:sub,tgst:tgst,grand:sub+tgst,r6:r6Id});
+  D.re6list.push({id:r6Id,iid:invId,date:NI.date,pass:NI.pass,vid:parseInt(NI.vid),did:parseInt(NI.did),vanlicUsed:veh.explics||'',vanlicformUsed:veh.explicform||'LE-7',maglicUsed:NI.maglicUsed||D.co.maglic||'',load:D.co.addr,unload:NI.unload||shipAddr(party),unloaddate:'',rem:''});
+  D.invoices.push({id:invId,date:NI.date,pid:parseInt(NI.pid),pass:NI.pass,vid:parseInt(NI.vid),did:parseInt(NI.did),maglicUsed:NI.maglicUsed,unload:NI.unload||shipAddr(party),items:items,sub:sub,tgst:tgst,grand:sub+tgst,r6:r6Id});
   closeM();toast('✅ Invoice '+invId+' + RE-6 '+r6Id+' created!');goPage('invoices');
 }
 
@@ -524,8 +536,8 @@ function buildInvHTML(inv){
   h+='</div></div>';
   // bill to / ship to
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">';
-  h+='<div style="border:1px solid #d1d5db;border-radius:4px;padding:9px 11px"><div style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1a3a5c;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:6px">Bill To</div><div style="font-weight:700;font-size:11pt">'+party.name+'</div><div style="font-size:9.5pt;color:#444;margin-top:2px">'+party.addr+'</div><div style="font-size:9.5pt;color:#444">GSTIN: '+party.gstin+'</div><div style="font-size:9.5pt;color:#444">Explosive Lic: '+party.lic+'</div>'+(party.contact?'<div style="font-size:9.5pt;color:#444">Contact: '+party.contact+' | '+party.phone+'</div>':'')+'</div>';
-  h+='<div style="border:1px solid #d1d5db;border-radius:4px;padding:9px 11px"><div style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1a3a5c;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:6px">Ship To</div><div style="font-weight:700;font-size:11pt">'+party.name+'</div><div style="font-size:9.5pt;color:#444;margin-top:2px">'+(inv.unload||party.addr)+'</div><div style="font-size:9.5pt;color:#444">PASS No: <b style="color:#c8410a">'+inv.pass+'</b></div><div style="font-size:9.5pt;color:#444">Supply Type: '+(same?'Intra-State (Maharashtra)':'Inter-State')+'</div></div>';
+  h+='<div style="border:1px solid #d1d5db;border-radius:4px;padding:9px 11px"><div style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1a3a5c;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:6px">Bill To</div><div style="font-weight:700;font-size:11pt">'+party.name+'</div><div style="font-size:9.5pt;color:#444;margin-top:2px">'+billAddr(party)+'</div><div style="font-size:9.5pt;color:#444">GSTIN: '+party.gstin+'</div>'+(party.contact?'<div style="font-size:9.5pt;color:#444">Contact: '+party.contact+' | '+party.phone+'</div>':'')+'</div>';
+  h+='<div style="border:1px solid #d1d5db;border-radius:4px;padding:9px 11px"><div style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1a3a5c;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:6px">Ship To</div><div style="font-weight:700;font-size:11pt">'+party.name+'</div><div style="font-size:9.5pt;color:#444;margin-top:2px">'+(inv.unload||shipAddr(party))+'</div><div style="font-size:9.5pt;color:#444">PASS No: <b style="color:#c8410a">'+inv.pass+'</b></div><div style="font-size:9.5pt;color:#444">Supply Type: '+(same?'Intra-State (Maharashtra)':'Inter-State')+'</div></div>';
   h+='</div>';
   // items table
   h+='<table style="width:100%;border-collapse:collapse;margin-bottom:12px"><thead><tr style="background:#1a3a5c">';
@@ -628,7 +640,7 @@ function buildRE6HTML(r,inv){
   // 10 sig consignor
   h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">10</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">Signature of the consignor</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;height:60px;vertical-align:bottom"><div style="border-bottom:1px solid #555;margin:0 8px;height:36px"></div><div style="font-size:9pt;text-align:center;color:#555">'+co.name+'</div></td></tr>';
   // 11 consignee
-  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">11</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">Name and address of the consignee</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;font-weight:bold"><b>'+party.name+'</b><br>'+party.addr+'<br>License No: <b>'+party.lic+'</b></td></tr>';
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">11</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">Name and address of the consignee</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;font-weight:bold"><b>'+party.name+'</b><br>'+billAddr(party)+'</td></tr>';
   // 12 unloading place
   h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">12</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">Place of unloading</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px">'+r.unload+'</td></tr>';
   // 13 date of unloading — ALWAYS BLANK for manual fill
@@ -756,17 +768,17 @@ function delVeh(id){if(!confirm('Delete vehicle?'))return;D.vehicles=D.vehicles.
 var ePid=null;
 function pgParties(){
   var h='<div class="phd"><div><div class="pt">Parties</div></div><button class="btn bp" onclick="openParty(null)">+ Add Party</button></div>';
-  h+='<div class="card" style="margin-bottom:0"><div style="overflow-x:auto"><table class="t"><thead><tr><th>Name</th><th>GSTIN</th><th>Explosive Lic.</th><th>Contact</th><th>State</th><th>Address</th><th></th></tr></thead><tbody>';
-  for(var i=0;i<D.parties.length;i++){var p=D.parties[i];h+='<tr><td style="font-weight:600">'+p.name+'</td><td class="mono">'+p.gstin+'</td><td class="mono" style="color:var(--ac);font-weight:600">'+p.lic+'</td><td style="font-size:10px">'+p.contact+'<br><span style="color:var(--t3)">'+p.phone+'</span></td><td style="font-size:10px">'+p.state+'</td><td style="font-size:10px;color:var(--t2)">'+p.addr+'</td><td><button class="btn bo bsm" onclick="openParty('+p.id+')">Edit</button></td></tr>';}
+  h+='<div class="card" style="margin-bottom:0"><div style="overflow-x:auto"><table class="t"><thead><tr><th>Name</th><th>GSTIN</th><th>Contact</th><th>State</th><th>Billing Address</th><th>Shipping / Unloading Address</th><th></th></tr></thead><tbody>';
+  for(var i=0;i<D.parties.length;i++){var p=D.parties[i];h+='<tr><td style="font-weight:600">'+p.name+'</td><td class="mono">'+p.gstin+'</td><td style="font-size:10px">'+(p.contact||'')+'<br><span style="color:var(--t3)">'+(p.phone||'')+'</span></td><td style="font-size:10px">'+(p.state||'')+'</td><td style="font-size:10px;color:var(--t2)">'+billAddr(p)+'</td><td style="font-size:10px;color:var(--t2)">'+shipAddr(p)+'</td><td><button class="btn bo bsm" onclick="openParty('+p.id+')">Edit</button></td></tr>';}
   h+='</tbody></table></div></div>';
   return h;
 }
 function openParty(id){
   ePid=id;var p={};if(id){for(var i=0;i<D.parties.length;i++){if(D.parties[i].id===id){p=D.parties[i];break;}}}
-  var body='<div class="fg"><label class="fl r">Party / Company Name</label><input class="fi" id="pa-n" value="'+(p.name||'')+'"></div><div class="fr"><div class="fg"><label class="fl r">GSTIN</label><input class="fi" id="pa-g" value="'+(p.gstin||'')+'" placeholder="27AAAAA0000A1Z5"></div><div class="fg"><label class="fl r">Explosive Licence No.</label><input class="fi" id="pa-l" value="'+(p.lic||'')+'" placeholder="MH/EXP/YYYY/XXXX"></div></div><div class="fg"><label class="fl r">Full Address</label><textarea class="fi" id="pa-a" rows="2">'+(p.addr||'')+'</textarea></div><div class="fr"><div class="fg"><label class="fl">State</label><input class="fi" id="pa-s" value="'+(p.state||'')+'"></div><div class="fg"><label class="fl">State Code</label><input class="fi" id="pa-sc" value="'+(p.sc||'')+'" placeholder="27"></div></div><div class="fr"><div class="fg"><label class="fl">Contact Person</label><input class="fi" id="pa-c" value="'+(p.contact||'')+'"></div><div class="fg"><label class="fl">Phone</label><input class="fi" id="pa-p" type="tel" value="'+(p.phone||'')+'"></div></div>';
+  var body='<div class="fg"><label class="fl r">Party / Company Name</label><input class="fi" id="pa-n" value="'+(p.name||'')+'"></div><div class="fr"><div class="fg"><label class="fl r">GSTIN</label><input class="fi" id="pa-g" value="'+(p.gstin||'')+'" placeholder="27AAAAA0000A1Z5"></div><div class="fg"><label class="fl">State Code</label><input class="fi" id="pa-sc" value="'+(p.sc||'')+'" placeholder="27"></div></div><div class="fg"><label class="fl r">Billing Address</label><textarea class="fi" id="pa-ba" rows="2">'+billAddr(p)+'</textarea></div><div class="fg"><label class="fl r">Shipping Address / Unloading Point</label><textarea class="fi" id="pa-sa" rows="2" placeholder="Where material will be unloaded">'+shipAddr(p)+'</textarea></div><div class="fr"><div class="fg"><label class="fl">State</label><input class="fi" id="pa-s" value="'+(p.state||'')+'"></div><div class="fg"><label class="fl">Contact Person</label><input class="fi" id="pa-c" value="'+(p.contact||'')+'"></div></div><div class="fg"><label class="fl">Phone</label><input class="fi" id="pa-p" type="tel" value="'+(p.phone||'')+'"></div>';
   openM(id?'Edit Party':'Add Party',body,'<button class="btn bo bsm" onclick="closeM()">Cancel</button><button class="btn bp bsm" onclick="saveParty()">'+(id?'Update':'Save')+'</button>');
 }
-function saveParty(){var n=document.getElementById('pa-n').value.trim(),g=document.getElementById('pa-g').value.trim(),l=document.getElementById('pa-l').value.trim();if(!n||!g||!l){toast('⚠ Fill required fields');return;}var obj={name:n,gstin:g,lic:l,addr:document.getElementById('pa-a').value,state:document.getElementById('pa-s').value,sc:document.getElementById('pa-sc').value,contact:document.getElementById('pa-c').value,phone:document.getElementById('pa-p').value};if(ePid){for(var i=0;i<D.parties.length;i++){if(D.parties[i].id===ePid){for(var k in obj)D.parties[i][k]=obj[k];break;}}toast('✅ Updated');}else{obj.id=Date.now();D.parties.push(obj);toast('✅ Added');}closeM();goPage('parties');}
+function saveParty(){var n=document.getElementById('pa-n').value.trim(),g=document.getElementById('pa-g').value.trim(),ba=document.getElementById('pa-ba').value.trim(),sa=document.getElementById('pa-sa').value.trim();if(!n||!g||!ba||!sa){toast('⚠ Fill required fields');return;}var obj={name:n,gstin:g,billAddr:ba,shipAddr:sa,addr:ba,lic:'',state:document.getElementById('pa-s').value,sc:document.getElementById('pa-sc').value,contact:document.getElementById('pa-c').value,phone:document.getElementById('pa-p').value};if(ePid){for(var i=0;i<D.parties.length;i++){if(D.parties[i].id===ePid){for(var k in obj)D.parties[i][k]=obj[k];break;}}toast('✅ Updated');}else{obj.id=Date.now();D.parties.push(obj);toast('✅ Added');}closeM();goPage('parties');}
 
 // ============================================================
 // PRODUCTS
