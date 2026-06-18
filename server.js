@@ -5,7 +5,9 @@ const crypto = require("crypto");
 
 const port = Number(process.env.PORT || 3000);
 const root = __dirname;
-const dataDir = process.env.DATA_DIR || (fs.existsSync("/data") ? "/data" : path.join(root, "data"));
+const isRailway = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_SERVICE_ID);
+const railwayVolumeDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || "/data";
+const dataDir = process.env.DATA_DIR || (isRailway ? railwayVolumeDir : (fs.existsSync("/data") ? "/data" : path.join(root, "data")));
 const usersPath = path.join(dataDir, "users.json");
 const sessions = new Map();
 
@@ -28,9 +30,16 @@ const types = {
 };
 
 function ensureStore() {
-  fs.mkdirSync(dataDir, { recursive: true });
-  if (!fs.existsSync(usersPath)) {
-    fs.writeFileSync(usersPath, JSON.stringify({ users: [] }, null, 2));
+  try {
+    fs.mkdirSync(dataDir, { recursive: true });
+    if (!fs.existsSync(usersPath)) {
+      fs.writeFileSync(usersPath, JSON.stringify({ users: [] }, null, 2));
+    }
+  } catch (error) {
+    const railwayHint = isRailway
+      ? ` Railway needs a persistent Volume mounted at ${dataDir}. Add a Railway Volume, set mount path to ${dataDir}, then redeploy.`
+      : "";
+    throw new Error(`Cannot write data store at ${dataDir}.${railwayHint} Original error: ${error.message}`);
   }
 }
 
@@ -211,7 +220,13 @@ const server = http.createServer((req, res) => {
   const pathname = decodeURIComponent((req.url || "/").split("?")[0]);
 
   if (pathname === "/health") {
-    sendJson(res, 200, { ok: true, service: "jagdish-trading-manager" });
+    sendJson(res, 200, {
+      ok: true,
+      service: "jagdish-trading-manager",
+      dataDir,
+      persistentStorageRequired: isRailway,
+      storageMode: isRailway ? "railway-volume" : "local-file"
+    });
     return;
   }
 
@@ -252,4 +267,5 @@ ensureStore();
 seedDefaultUsers();
 server.listen(port, "0.0.0.0", () => {
   console.log(`Jagdish Trading Manager running on port ${port}`);
+  console.log(`Data store: ${usersPath}`);
 });
