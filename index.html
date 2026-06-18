@@ -91,9 +91,31 @@ textarea.fi{resize:vertical;min-height:52px}
 .toast-w{position:fixed;bottom:16px;right:16px;z-index:999}
 .toast{display:inline-block;background:#1a2030;color:#fff;padding:7px 14px;border-radius:7px;font-size:12px;opacity:0;transition:opacity .25s;pointer-events:none}
 .toast.on{opacity:1}
+.auth{position:fixed;inset:0;background:linear-gradient(135deg,#102a43,#1a3a5c);display:flex;align-items:center;justify-content:center;z-index:1000;padding:18px}
+.auth.hide{display:none}
+.authbox{width:100%;max-width:380px;background:#fff;border-radius:12px;padding:22px;border:1px solid rgba(255,255,255,.2);box-shadow:0 24px 80px rgba(0,0,0,.28)}
+.authbox h1{font-size:20px;color:var(--b);margin-bottom:4px}
+.authbox p{font-size:11px;color:var(--t3);margin-bottom:16px}
+.authbox .fi{margin-bottom:10px}
+.authrow{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:8px}
+.authmsg{min-height:16px;font-size:11px;color:var(--dc);margin-top:8px}
 </style>
 
 <h2 class="sr-only">M/s. Jagdish Trading Company — Explosive Dealer Management System v8</h2>
+
+<div class="auth" id="auth">
+  <div class="authbox">
+    <h1>Jagdish Manager Login</h1>
+    <p>Each user has a private profile. Login is required before records open.</p>
+    <input class="fi" id="auth-u" autocomplete="username" placeholder="Username">
+    <input class="fi" id="auth-p" autocomplete="current-password" type="password" placeholder="Password">
+    <div class="authrow">
+      <button class="btn bp" onclick="loginUser()">Login</button>
+      <button class="btn bo" onclick="registerUser()">Create User</button>
+    </div>
+    <div class="authmsg" id="auth-msg"></div>
+  </div>
+</div>
 
 <div style="position:relative">
 <div class="app" id="app">
@@ -131,7 +153,8 @@ textarea.fi{resize:vertical;min-height:52px}
       <div class="top-t" id="ptitle">Dashboard</div>
       <div style="display:flex;align-items:center;gap:8px">
         <div style="font-size:9px;color:var(--t3);font-family:'IBM Plex Mono',monospace" id="dstr"></div>
-        <div class="upill"><div class="uav">JT</div><span>Admin</span></div>
+        <div class="upill"><div class="uav" id="uav">JT</div><span id="uname">User</span></div>
+        <button class="btn bo bsm" onclick="logoutUser()">Logout</button>
       </div>
     </div>
     <div class="pg" id="pg"></div>
@@ -206,29 +229,87 @@ var D = {
   ]
 };
 
-var STORE_KEY = 'jagdish-v8-data';
-function saveData(){
-  try{localStorage.setItem(STORE_KEY,JSON.stringify(D));}
-  catch(e){console.warn('Could not save data',e);toast('⚠ Browser storage is full or disabled');}
+var DEFAULT_DATA = JSON.parse(JSON.stringify(D));
+var AUTH_TOKEN = sessionStorage.getItem('jagdish-token') || '';
+var CURRENT_USER = null;
+
+function authMessage(msg){var e=document.getElementById('auth-msg');if(e)e.textContent=msg||'';}
+function api(path,opts){
+  opts=opts||{};
+  opts.headers=opts.headers||{};
+  opts.headers['Content-Type']='application/json';
+  if(AUTH_TOKEN)opts.headers.Authorization='Bearer '+AUTH_TOKEN;
+  return fetch(path,opts).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Request failed');return j;});});
 }
-function loadData(){
-  try{
-    var raw=localStorage.getItem(STORE_KEY);
-    if(!raw)return;
-    var saved=JSON.parse(raw);
-    if(saved&&saved.co&&saved.invoices&&saved.re6list){
-      D=saved;
+function setUser(user){
+  CURRENT_USER=user;
+  var name=user&&user.username?user.username:'User';
+  var initials=name.slice(0,2).toUpperCase();
+  var un=document.getElementById('uname'), av=document.getElementById('uav');
+  if(un)un.textContent=name;
+  if(av)av.textContent=initials;
+}
+function showApp(){
+  document.getElementById('auth').classList.add('hide');
+  document.getElementById('dstr').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+  goPage('dashboard');
+}
+function showLogin(){
+  document.getElementById('auth').classList.remove('hide');
+}
+function loadUserData(){
+  return api('/api/me/data').then(function(res){
+    if(res.data&&res.data.co&&res.data.invoices&&res.data.re6list){
+      D=res.data;
+    }else{
+      D=JSON.parse(JSON.stringify(DEFAULT_DATA));
+      saveData();
     }
-  }catch(e){
-    console.warn('Could not load saved data',e);
-  }
+  });
 }
-function resetData(){
-  if(!confirm('Reset all saved browser data and restore sample records?'))return;
-  localStorage.removeItem(STORE_KEY);
+function saveData(){
+  if(!AUTH_TOKEN)return;
+  api('/api/me/data',{method:'POST',body:JSON.stringify({data:D})}).catch(function(e){
+    console.warn('Could not save data',e);
+    toast('⚠ Could not save to user profile');
+  });
+}
+function loginUser(){
+  var username=document.getElementById('auth-u').value.trim();
+  var password=document.getElementById('auth-p').value;
+  authMessage('');
+  api('/api/login',{method:'POST',body:JSON.stringify({username:username,password:password})}).then(function(res){
+    AUTH_TOKEN=res.token;
+    sessionStorage.setItem('jagdish-token',AUTH_TOKEN);
+    setUser(res.user);
+    return loadUserData();
+  }).then(showApp).catch(function(e){authMessage(e.message);});
+}
+function registerUser(){
+  var username=document.getElementById('auth-u').value.trim();
+  var password=document.getElementById('auth-p').value;
+  authMessage('');
+  api('/api/register',{method:'POST',body:JSON.stringify({username:username,password:password,data:DEFAULT_DATA})}).then(function(res){
+    AUTH_TOKEN=res.token;
+    sessionStorage.setItem('jagdish-token',AUTH_TOKEN);
+    setUser(res.user);
+    D=JSON.parse(JSON.stringify(DEFAULT_DATA));
+  }).then(showApp).catch(function(e){authMessage(e.message);});
+}
+function logoutUser(){
+  saveData();
+  api('/api/logout',{method:'POST',body:'{}'}).catch(function(){});
+  AUTH_TOKEN='';
+  CURRENT_USER=null;
+  sessionStorage.removeItem('jagdish-token');
   location.reload();
 }
-loadData();
+function resetData(){
+  if(!confirm('Reset only your user profile data and restore sample records?'))return;
+  D=JSON.parse(JSON.stringify(DEFAULT_DATA));
+  saveData();
+  goPage('dashboard');
+}
 
 // ============================================================
 // HELPERS
@@ -767,6 +848,16 @@ function saveSettings(){
 }
 
 // INIT
-document.getElementById('dstr').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
-goPage('dashboard');
+function boot(){
+  if(!AUTH_TOKEN){showLogin();return;}
+  api('/api/me').then(function(res){
+    setUser(res.user);
+    return loadUserData();
+  }).then(showApp).catch(function(){
+    AUTH_TOKEN='';
+    sessionStorage.removeItem('jagdish-token');
+    showLogin();
+  });
+}
+boot();
 </script>
