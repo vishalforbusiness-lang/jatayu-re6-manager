@@ -206,6 +206,30 @@ var D = {
   ]
 };
 
+var STORE_KEY = 'jagdish-v8-data';
+function saveData(){
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(D));}
+  catch(e){console.warn('Could not save data',e);toast('⚠ Browser storage is full or disabled');}
+}
+function loadData(){
+  try{
+    var raw=localStorage.getItem(STORE_KEY);
+    if(!raw)return;
+    var saved=JSON.parse(raw);
+    if(saved&&saved.co&&saved.invoices&&saved.re6list){
+      D=saved;
+    }
+  }catch(e){
+    console.warn('Could not load saved data',e);
+  }
+}
+function resetData(){
+  if(!confirm('Reset all saved browser data and restore sample records?'))return;
+  localStorage.removeItem(STORE_KEY);
+  location.reload();
+}
+loadData();
+
 // ============================================================
 // HELPERS
 // ============================================================
@@ -237,6 +261,7 @@ function n2w(n){
 // NAV
 // ============================================================
 function goPage(p){
+  saveData();
   var all=['dashboard','invoices','re6','inventory','drivers','vehicles','parties','products','settings'];
   for(var i=0;i<all.length;i++){var e=document.getElementById('ni-'+all[i]);if(e)e.classList.remove('on');}
   var e2=document.getElementById('ni-'+p);if(e2)e2.classList.add('on');
@@ -721,7 +746,7 @@ function pgSettings(){
   h+='<div class="fg"><label class="fl">Bank Name</label><input class="fi" id="s-bk" value="'+c.bank+'"></div>';
   h+='<div class="fr"><div class="fg"><label class="fl">Account No.</label><input class="fi" id="s-ac" value="'+c.acc+'"></div><div class="fg"><label class="fl">IFSC</label><input class="fi" id="s-if" value="'+c.ifsc+'"></div></div>';
   h+='</div></div></div>';
-  h+='<button class="btn bp" style="margin-top:6px" onclick="saveSettings()">💾 Save Settings</button>';
+  h+='<div style="display:flex;gap:8px;margin-top:6px"><button class="btn bp" onclick="saveSettings()">💾 Save Settings</button><button class="btn bd" onclick="resetData()">Reset Saved Data</button></div>';
   return h;
 }
 function saveSettings(){
@@ -737,6 +762,7 @@ function saveSettings(){
   D.co.bank=document.getElementById('s-bk').value;
   D.co.acc=document.getElementById('s-ac').value;
   D.co.ifsc=document.getElementById('s-if').value;
+  saveData();
   toast('✅ Settings saved!');
 }
 
