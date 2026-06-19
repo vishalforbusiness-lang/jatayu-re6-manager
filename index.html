@@ -182,7 +182,8 @@ var D = {
     // NO explosive store licence here — moved to vehicles
     // NO licform here — moved to vehicles
     maglic:'',
-    bank:'', acc:'', ifsc:''
+    bank:'', acc:'', ifsc:'',
+    terms:'1. Goods once sold will not be taken back.\n2. Subject to Satara jurisdiction.\n3. PASS must accompany this invoice during transport.\n4. Explosives to be used only at licensed site.'
   },
   drivers:[
     {id:1,name:'Ramesh Kumar',phone:'9876543210',addr:'Satara, MH',dl:'MH11 2019 0056123',dltype:'HMV',dlissue:'2019-06-10',dlexp:'2029-06-09',badge:'PESO/DRV/2022/0041',badgeexp:'2025-06-10',vid:1,status:'active'},
@@ -261,20 +262,29 @@ function loadUserData(){
   return api('/api/me/data').then(function(res){
     if(res.data&&res.data.co&&res.data.invoices&&res.data.re6list){
       D=res.data;
-      migratePartyAddresses();
+      migrateUserData();
     }else{
       D=JSON.parse(JSON.stringify(DEFAULT_DATA));
-      migratePartyAddresses();
+      migrateUserData();
       saveData();
     }
   });
 }
-function migratePartyAddresses(){
-  if(!D.parties)return;
-  for(var i=0;i<D.parties.length;i++){
-    var p=D.parties[i];
-    if(!p.billAddr)p.billAddr=p.addr||'';
-    if(!p.shipAddr)p.shipAddr=p.unloadAddr||p.addr||'';
+function migrateUserData(){
+  D.co=D.co||{};
+  if(typeof D.co.terms!=='string')D.co.terms=DEFAULT_DATA.co.terms;
+  if(D.parties){
+    for(var i=0;i<D.parties.length;i++){
+      var p=D.parties[i];
+      if(!p.billAddr)p.billAddr=p.addr||'';
+      if(!p.shipAddr)p.shipAddr=p.unloadAddr||p.addr||'';
+    }
+  }
+  if(D.products){
+    for(var j=0;j<D.products.length;j++){
+      if(typeof D.products[j].batch!=='string')D.products[j].batch='';
+      if(typeof D.products[j].barcode!=='string')D.products[j].barcode='';
+    }
   }
 }
 function saveData(){
@@ -338,6 +348,8 @@ function gV(id){for(var i=0;i<D.vehicles.length;i++){if(D.vehicles[i].id==id)ret
 function gDr(id){for(var i=0;i<D.drivers.length;i++){if(D.drivers[i].id==id)return D.drivers[i];}return {};}
 function billAddr(p){return (p&&p.billAddr)||((p&&p.addr)||'');}
 function shipAddr(p){return (p&&p.shipAddr)||((p&&p.unloadAddr)||billAddr(p));}
+function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function termsHTML(v){return esc(v).replace(/\r?\n/g,'<br>');}
 function inits(n){if(!n)return '??';var p=n.split(' ');return (p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
 function expBadge(d){var n=dl(d);if(!d||n===null)return '<span class="bx xgr">—</span>';if(n<0)return '<span class="bx xr">Expired</span>';if(n<=60)return '<span class="bx xa">'+fD(d)+'</span>';return '<span class="bx xgr">'+fD(d)+'</span>';}
 function stBadge(s){var m={active:'xg',inactive:'xr','on-leave':'xa',maintenance:'xa'};var l={active:'Active',inactive:'Inactive','on-leave':'On Leave',maintenance:'Maintenance'};return '<span class="bx '+(m[s]||'xgr')+'">'+(l[s]||s)+'</span>';}
@@ -481,7 +493,7 @@ function niUpdateTotals(){
 function niSelProd(i,val){
   NI.rows[i].pid=parseInt(val)||'';
   var pr=gPr(val);
-  if(pr&&pr.name){NI.rows[i].pname=pr.name;NI.rows[i].unit=pr.unit;NI.rows[i].gst=pr.gst;NI.rows[i].hsn=pr.hsn;NI.rows[i].cls=pr.cls;NI.rows[i].div=pr.div;if(!NI.rows[i].rate||NI.rows[i].rate==='')NI.rows[i].rate=pr.rate||'';}
+  if(pr&&pr.name){NI.rows[i].pname=pr.name;NI.rows[i].unit=pr.unit;NI.rows[i].gst=pr.gst;NI.rows[i].hsn=pr.hsn;NI.rows[i].cls=pr.cls;NI.rows[i].div=pr.div;NI.rows[i].batch=pr.batch||'';NI.rows[i].barcode=pr.barcode||'';if(!NI.rows[i].rate||NI.rows[i].rate==='')NI.rows[i].rate=pr.rate||'';}
   buildInvModal();
 }
 function niAddRow(){NI.rows.push({pid:'',pname:'',batch:'',bdate:'',qty:'',rate:'',unit:'',gst:18,cases:'',hsn:'',cls:'',div:''});buildInvModal();}
@@ -499,7 +511,7 @@ function saveInv(){
   var items=[],sub=0,tgst=0;
   for(var i=0;i<valid.length;i++){
     var r=valid[i];var a=(parseFloat(r.qty)||0)*(parseFloat(r.rate)||0);var ga=a*(r.gst||18)/100;
-    items.push({pid:parseInt(r.pid),pname:r.pname,batch:r.batch,bdate:r.bdate,qty:parseFloat(r.qty),unit:r.unit,rate:parseFloat(r.rate),cases:parseInt(r.cases)||Math.ceil(parseFloat(r.qty)/25),amt:a,gst:r.gst||18,igst:same?0:ga,cgst:same?ga/2:0,sgst:same?ga/2:0,tot:a+ga,hsn:r.hsn,cls:r.cls,div:r.div});
+    items.push({pid:parseInt(r.pid),pname:r.pname,batch:r.batch,barcode:r.barcode||'',bdate:r.bdate,qty:parseFloat(r.qty),unit:r.unit,rate:parseFloat(r.rate),cases:parseInt(r.cases)||Math.ceil(parseFloat(r.qty)/25),amt:a,gst:r.gst||18,igst:same?0:ga,cgst:same?ga/2:0,sgst:same?ga/2:0,tot:a+ga,hsn:r.hsn,cls:r.cls,div:r.div});
     sub+=a;tgst+=ga;
   }
   D.r6Num++;var r6Id='RE6-'+yr+'-'+('00'+D.r6Num).slice(-3);
@@ -521,7 +533,7 @@ function buildInvHTML(inv){
     var item=inv.items[i];
     rows+='<tr style="background:'+(i%2===0?'#f8f9fb':'#fff')+'">';
     rows+='<td style="text-align:center;padding:8px;border:1px solid #d1d5db;font-size:11px;font-weight:600">'+(i+1)+'</td>';
-    rows+='<td style="padding:8px;border:1px solid #d1d5db"><div style="font-weight:600;font-size:11px">'+item.pname+'</div><div style="font-size:9px;color:#777;margin-top:1px">HSN: '+(item.hsn||'—')+' &nbsp;|&nbsp; Class '+item.cls+' / Division '+item.div+'</div><div style="font-size:9px;color:#777">Batch: '+item.batch+(item.bdate?' | Mfg: '+fDS(item.bdate):'')+'</div></td>';
+    rows+='<td style="padding:8px;border:1px solid #d1d5db"><div style="font-weight:600;font-size:11px">'+item.pname+'</div><div style="font-size:9px;color:#777;margin-top:1px">HSN: '+(item.hsn||'—')+' &nbsp;|&nbsp; Class '+item.cls+' / Division '+item.div+'</div><div style="font-size:9px;color:#777">Batch: '+item.batch+(item.barcode?' | Barcode: '+item.barcode:'')+(item.bdate?' | Mfg: '+fDS(item.bdate):'')+'</div></td>';
     rows+='<td style="text-align:right;padding:8px;border:1px solid #d1d5db;font-size:11px">'+fI(item.qty)+'</td>';
     rows+='<td style="text-align:center;padding:8px;border:1px solid #d1d5db;font-size:11px">'+item.unit+'</td>';
     rows+='<td style="text-align:right;padding:8px;border:1px solid #d1d5db;font-size:11px">'+fN(item.rate)+'</td>';
@@ -565,7 +577,7 @@ function buildInvHTML(inv){
   if(co.bank){h+='<div style="background:#f8f9fb;border:1px solid #e5e7eb;border-radius:4px;padding:8px 11px;font-size:9.5pt;margin-bottom:12px"><b>Bank:</b> '+co.bank+' &nbsp;|&nbsp; <b>A/C No:</b> '+co.acc+' &nbsp;|&nbsp; <b>IFSC:</b> '+co.ifsc+'</div>';}
   // terms + sig
   h+='<div style="border-top:1px solid #e5e7eb;padding-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:20px">';
-  h+='<div><div style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#555;margin-bottom:5px">Terms &amp; Conditions</div><div style="font-size:9pt;color:#666;line-height:1.6">1. Goods once sold will not be taken back.<br>2. Subject to Satara jurisdiction.<br>3. PASS must accompany this invoice during transport.<br>4. Explosives to be used only at licensed site.</div></div>';
+  h+='<div><div style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#555;margin-bottom:5px">Terms &amp; Conditions</div><div style="font-size:9pt;color:#666;line-height:1.6">'+termsHTML(co.terms||'')+'</div></div>';
   h+='<div style="text-align:right"><div style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#555;margin-bottom:40px">For '+co.name+'</div><div style="border-top:1px solid #555;padding-top:5px;font-size:9pt;color:#444">Authorised Signatory</div></div>';
   h+='</div>';
   h+='<div style="text-align:center;margin-top:12px;padding-top:8px;border-top:1px solid #eee;font-size:8.5pt;color:#999">Computer generated invoice &nbsp;|&nbsp; RE-6 Ref: '+inv.r6+' &nbsp;|&nbsp; GSTIN: '+co.gstin+'</div>';
@@ -630,7 +642,7 @@ function buildRE6HTML(r,inv){
   var expRows='';
   for(var i=0;i<inv.items.length;i++){
     var item=inv.items[i];
-    expRows+='<tr><td style="padding:6px 8px;border:1px solid #aaa;text-align:left">'+item.pname+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center">'+item.cls+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center">'+item.div+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center;font-family:monospace;font-size:9.5pt">'+item.batch+(item.bdate?'<br><span style="font-size:8.5pt;color:#555">'+fDS(item.bdate)+'</span>':'')+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center">'+fI(item.qty)+' '+item.unit+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center">'+item.cases+'</td></tr>';
+    expRows+='<tr><td style="padding:6px 8px;border:1px solid #aaa;text-align:left">'+item.pname+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center">'+item.cls+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center">'+item.div+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center;font-family:monospace;font-size:9.5pt">'+item.batch+(item.bdate?'<br><span style="font-size:8.5pt;color:#555">'+fDS(item.bdate)+'</span>':'')+'</td><td style="padding:6px 8px;border:1px solid #aaa;text-align:center">'+fI(item.qty)+' '+item.unit+'</td></tr>';
   }
   var h='<div style="width:210mm;min-height:297mm;margin:0 auto;padding:12mm 14mm;font-family:\'Bookman Old Style\',Georgia,\'Times New Roman\',serif;font-size:11pt;color:#000;background:#fff">';
   // title
@@ -652,7 +664,7 @@ function buildRE6HTML(r,inv){
   // explosives header
   h+='<tr><td colspan="4" style="border:1px solid #aaa;padding:4px 8px;background:#e8e8e8;font-weight:bold;font-size:9.5pt;text-align:center">Description of explosives</td></tr>';
   // 4–8
-  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">4–8</td><td colspan="3" style="border:1px solid #aaa;padding:0"><table style="width:100%;border-collapse:collapse;font-size:9.5pt"><thead><tr><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:left">Name and Description (4)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Class (5)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Division (6)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Batch No. &amp; Date (7)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Qty Transported (8)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Cases/Packets</th></tr></thead><tbody>'+expRows+'</tbody></table></td></tr>';
+  h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">4–8</td><td colspan="3" style="border:1px solid #aaa;padding:0"><table style="width:100%;border-collapse:collapse;font-size:9.5pt"><thead><tr><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:left">Name and Description (4)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Class (5)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Division (6)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Batch No. &amp; Date (7)</th><th style="border:1px solid #aaa;padding:5px 7px;background:#f0f0f0;text-align:center">Qty Transported (8)</th></tr></thead><tbody>'+expRows+'</tbody></table></td></tr>';
   // 9 PASS
   h+='<tr><td style="border:1px solid #aaa;text-align:center;font-weight:bold;background:#f5f5f5;padding:5px 3px;vertical-align:middle">9</td><td style="border:1px solid #aaa;padding:5px 8px;font-size:9.5pt;color:#333">PASS Number</td><td colspan="2" style="border:1px solid #aaa;padding:5px 8px;font-size:13pt;font-weight:bold;color:#c8410a">'+r.pass+'</td></tr>';
   // 10 sig consignor
@@ -804,8 +816,8 @@ function saveParty(){var n=document.getElementById('pa-n').value.trim(),g=docume
 var ePrId=null;
 function pgProds(){
   var h='<div class="phd"><div><div class="pt">Products</div><div class="ps">Default rate auto-fills in invoices</div></div><button class="btn bp" onclick="openProd(null)">+ Add Product</button></div>';
-  h+='<div class="card" style="margin-bottom:0"><div style="overflow-x:auto"><table class="t"><thead><tr><th>Product Name</th><th>Class</th><th>Division</th><th>HSN</th><th>Unit</th><th>Default Rate ₹</th><th>GST%</th><th>Manufacturer</th><th></th></tr></thead><tbody>';
-  for(var i=0;i<D.products.length;i++){var p=D.products[i];h+='<tr><td style="font-weight:600">'+p.name+'</td><td><span class="bx xr">Cl.'+p.cls+'</span></td><td><span class="bx xa">Div '+p.div+'</span></td><td class="mono">'+p.hsn+'</td><td><span class="bx xgr">'+p.unit+'</span></td><td class="mono" style="font-weight:700;color:var(--sc)">₹'+fN(p.rate||0)+'</td><td class="mono" style="color:var(--bm);font-weight:600">'+p.gst+'%</td><td style="font-size:10px;color:var(--t2)">'+p.mfr+'</td><td><div class="act"><button class="btn bo bsm" onclick="openProd('+p.id+')">Edit</button><button class="btn bd bsm" onclick="delProd('+p.id+')">Del</button></div></td></tr>';}
+  h+='<div class="card" style="margin-bottom:0"><div style="overflow-x:auto"><table class="t"><thead><tr><th>Product Name</th><th>Batch / Barcode</th><th>Class</th><th>Division</th><th>HSN</th><th>Unit</th><th>Default Rate ₹</th><th>GST%</th><th>Manufacturer</th><th></th></tr></thead><tbody>';
+  for(var i=0;i<D.products.length;i++){var p=D.products[i];h+='<tr><td style="font-weight:600">'+p.name+'</td><td><div class="mono" style="font-size:10px">'+(p.batch||'—')+'</div><div class="mono" style="font-size:9px;color:var(--t3)">'+(p.barcode||'No barcode')+'</div></td><td><span class="bx xr">Cl.'+p.cls+'</span></td><td><span class="bx xa">Div '+p.div+'</span></td><td class="mono">'+p.hsn+'</td><td><span class="bx xgr">'+p.unit+'</span></td><td class="mono" style="font-weight:700;color:var(--sc)">₹'+fN(p.rate||0)+'</td><td class="mono" style="color:var(--bm);font-weight:600">'+p.gst+'%</td><td style="font-size:10px;color:var(--t2)">'+p.mfr+'</td><td><div class="act"><button class="btn bo bsm" onclick="openProd('+p.id+')">Edit</button><button class="btn bd bsm" onclick="delProd('+p.id+')">Del</button></div></td></tr>';}
   h+='</tbody></table></div></div>';
   return h;
 }
@@ -823,13 +835,14 @@ function openProd(id){
   var body='<div class="fr"><div class="fg" style="grid-column:1/-1"><label class="fl r">Product Name</label><input class="fi" id="pr-n" value="'+(p.name||'')+'"></div></div>';
   body+='<div class="fr"><div class="fg"><label class="fl r">Class</label><select class="fi" id="pr-cls" onchange="prToggleCls()">'+copts+'</select><input class="fi" id="pr-cls-c" style="margin-top:4px;'+(isCustomCls?'':'display:none')+'" value="'+(isCustomCls?curCls:'')+'" placeholder="Enter class"></div><div class="fg"><label class="fl r">Division</label><select class="fi" id="pr-div" onchange="prToggleDiv()">'+dopts+'</select><input class="fi" id="pr-div-c" style="margin-top:4px;'+(isCustomDiv?'':'display:none')+'" value="'+(isCustomDiv?curDiv:'')+'" placeholder="Enter division"></div></div>';
   body+='<div class="fr"><div class="fg"><label class="fl r">HSN Code</label><input class="fi" id="pr-h" value="'+(p.hsn||'')+'"></div><div class="fg"><label class="fl r">Unit</label><select class="fi" id="pr-u">'+uopts+'</select></div></div>';
+  body+='<div class="fr"><div class="fg"><label class="fl r">Default Batch Number</label><input class="fi" id="pr-batch" value="'+esc(p.batch||'')+'" placeholder="Auto-fills in invoice"></div><div class="fg"><label class="fl r">Barcode</label><input class="fi" id="pr-barcode" value="'+esc(p.barcode||'')+'" placeholder="Scan or enter barcode"></div></div>';
   body+='<div class="fr"><div class="fg"><label class="fl r">Default Rate (₹ per unit)</label><input class="fi" id="pr-r" type="number" min="0" value="'+(p.rate||'')+'" placeholder="Auto-fills in invoice, editable anytime"></div><div class="fg"><label class="fl r">GST Rate</label><select class="fi" id="pr-g">'+gopts+'</select></div></div>';
   body+='<div class="fg"><label class="fl">Manufacturer</label><input class="fi" id="pr-m" value="'+(p.mfr||'')+'"></div>';
   openM(id?'Edit Product':'Add Product',body,'<button class="btn bo bsm" onclick="closeM()">Cancel</button><button class="btn bp bsm" onclick="saveProd()">'+(id?'Update':'Save')+'</button>');
 }
 function prToggleCls(){var s=document.getElementById('pr-cls'),c=document.getElementById('pr-cls-c');if(s&&c)c.style.display=s.value==='custom'?'':'none';}
 function prToggleDiv(){var s=document.getElementById('pr-div'),c=document.getElementById('pr-div-c');if(s&&c)c.style.display=s.value==='custom'?'':'none';}
-function saveProd(){var n=document.getElementById('pr-n').value.trim(),h=document.getElementById('pr-h').value.trim();if(!n||!h){toast('⚠ Fill required fields');return;}var cs=document.getElementById('pr-cls').value;var cls=cs==='custom'?(document.getElementById('pr-cls-c').value.trim()||'1'):cs;var ds=document.getElementById('pr-div').value;var div=ds==='custom'?(document.getElementById('pr-div-c').value.trim()||'1D'):ds;var obj={name:n,cls:cls,div:div,hsn:h,unit:document.getElementById('pr-u').value,rate:parseFloat(document.getElementById('pr-r').value)||0,gst:parseInt(document.getElementById('pr-g').value),mfr:document.getElementById('pr-m').value};if(ePrId){for(var i=0;i<D.products.length;i++){if(D.products[i].id===ePrId){for(var k in obj)D.products[i][k]=obj[k];break;}}toast('✅ Updated');}else{obj.id=Date.now();D.products.push(obj);toast('✅ Added');}closeM();goPage('products');}
+function saveProd(){var n=document.getElementById('pr-n').value.trim(),h=document.getElementById('pr-h').value.trim(),batch=document.getElementById('pr-batch').value.trim(),barcode=document.getElementById('pr-barcode').value.trim();if(!n||!h||!batch||!barcode){toast('⚠ Fill required fields');return;}var cs=document.getElementById('pr-cls').value;var cls=cs==='custom'?(document.getElementById('pr-cls-c').value.trim()||'1'):cs;var ds=document.getElementById('pr-div').value;var div=ds==='custom'?(document.getElementById('pr-div-c').value.trim()||'1D'):ds;var obj={name:n,cls:cls,div:div,hsn:h,batch:batch,barcode:barcode,unit:document.getElementById('pr-u').value,rate:parseFloat(document.getElementById('pr-r').value)||0,gst:parseInt(document.getElementById('pr-g').value),mfr:document.getElementById('pr-m').value};if(ePrId){for(var i=0;i<D.products.length;i++){if(D.products[i].id===ePrId){for(var k in obj)D.products[i][k]=obj[k];break;}}toast('✅ Updated');}else{obj.id=Date.now();D.products.push(obj);toast('✅ Added');}closeM();goPage('products');}
 function delProd(id){if(!confirm('Delete product?'))return;D.products=D.products.filter(function(p){return p.id!==id;});toast('Removed');goPage('products');}
 
 // ============================================================
@@ -847,6 +860,7 @@ function pgSettings(){
   h+='<div class="fr"><div class="fg"><label class="fl">Phone</label><input class="fi" id="s-ph" value="'+c.phone+'"></div><div class="fg"><label class="fl">Email</label><input class="fi" id="s-em" type="email" value="'+c.email+'"></div></div>';
   h+='<div class="fr"><div class="fg"><label class="fl">GSTIN</label><input class="fi" id="s-g" value="'+c.gstin+'"></div><div class="fg"><label class="fl">PAN</label><input class="fi" id="s-p" value="'+c.pan+'"></div></div>';
   h+='<div class="fr"><div class="fg"><label class="fl">State</label><input class="fi" id="s-st" value="'+c.state+'"></div><div class="fg"><label class="fl">State Code</label><input class="fi" id="s-sc" value="'+c.sc+'"></div></div>';
+  h+='<div class="fg"><label class="fl">Invoice Terms &amp; Conditions</label><textarea class="fi" id="s-terms" rows="6" placeholder="One condition per line">'+esc(c.terms||'')+'</textarea></div>';
   h+='</div>';
   h+='<div>';
   h+='<div class="card"><div class="ct" style="margin-bottom:12px;color:var(--ac)">Magazine Licence (Default for RE-6)</div>';
@@ -873,6 +887,7 @@ function saveSettings(){
   D.co.bank=document.getElementById('s-bk').value;
   D.co.acc=document.getElementById('s-ac').value;
   D.co.ifsc=document.getElementById('s-if').value;
+  D.co.terms=document.getElementById('s-terms').value;
   saveData();
   toast('✅ Settings saved!');
 }
