@@ -9,6 +9,7 @@ const isRailway = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY
 const railwayVolumeDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || "/data";
 const dataDir = process.env.DATA_DIR || (isRailway ? railwayVolumeDir : (fs.existsSync("/data") ? "/data" : path.join(root, "data")));
 const usersPath = path.join(dataDir, "users.json");
+const backupPath = path.join(dataDir, "users.json.bak");
 const sessions = new Map();
 
 const DEFAULT_USERS = [
@@ -45,12 +46,30 @@ function ensureStore() {
 
 function readStore() {
   ensureStore();
-  return JSON.parse(fs.readFileSync(usersPath, "utf8"));
+  try {
+    return JSON.parse(fs.readFileSync(usersPath, "utf8"));
+  } catch (error) {
+    if (!fs.existsSync(backupPath)) throw error;
+    const backup = JSON.parse(fs.readFileSync(backupPath, "utf8"));
+    fs.copyFileSync(backupPath, usersPath);
+    console.error(`Recovered damaged data store from ${backupPath}: ${error.message}`);
+    return backup;
+  }
 }
 
 function writeStore(store) {
   ensureStore();
-  fs.writeFileSync(usersPath, JSON.stringify(store, null, 2));
+  const json = JSON.stringify(store, null, 2);
+  const tempPath = path.join(dataDir, `users.json.${process.pid}.tmp`);
+  fs.writeFileSync(tempPath, json, "utf8");
+  if (fs.existsSync(usersPath)) fs.copyFileSync(usersPath, backupPath);
+  try {
+    fs.renameSync(tempPath, usersPath);
+  } catch {
+    fs.copyFileSync(tempPath, usersPath);
+    fs.unlinkSync(tempPath);
+  }
+  fs.copyFileSync(usersPath, backupPath);
 }
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
@@ -207,7 +226,7 @@ async function handleApi(req, res, pathname) {
       target.data = body.data;
       target.updatedAt = new Date().toISOString();
       writeStore(store);
-      return sendJson(res, 200, { ok: true });
+      return sendJson(res, 200, { ok: true, updatedAt: target.updatedAt });
     }
 
     return sendJson(res, 404, { error: "API route not found." });

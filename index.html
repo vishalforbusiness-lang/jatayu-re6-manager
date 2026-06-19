@@ -233,6 +233,7 @@ var D = {
 var DEFAULT_DATA = JSON.parse(JSON.stringify(D));
 var AUTH_TOKEN = sessionStorage.getItem('jagdish-token') || '';
 var CURRENT_USER = null;
+var SAVE_CHAIN = Promise.resolve();
 
 function authMessage(msg){var e=document.getElementById('auth-msg');if(e)e.textContent=msg||'';}
 function api(path,opts){
@@ -289,10 +290,15 @@ function migrateUserData(){
 }
 function saveData(){
   if(!AUTH_TOKEN)return Promise.resolve();
-  return api('/api/me/data',{method:'POST',body:JSON.stringify({data:D})}).catch(function(e){
-    console.warn('Could not save data',e);
-    toast('⚠ Could not save to user profile');
-  });
+  var snapshot=JSON.parse(JSON.stringify(D));
+  function attemptSave(tries){
+    return api('/api/me/data',{method:'POST',body:JSON.stringify({data:snapshot})}).catch(function(e){
+      if(tries>1)return new Promise(function(resolve){setTimeout(resolve,500);}).then(function(){return attemptSave(tries-1);});
+      throw e;
+    });
+  }
+  SAVE_CHAIN=SAVE_CHAIN.catch(function(){}).then(function(){return attemptSave(3);});
+  return SAVE_CHAIN;
 }
 function loginUser(){
   var username=document.getElementById('auth-u').value.trim();
@@ -317,22 +323,18 @@ function registerUser(){
   }).then(showApp).catch(function(e){authMessage(e.message);});
 }
 function logoutUser(){
-  saveData().finally(function(){
+  saveData().then(function(){
     api('/api/logout',{method:'POST',body:'{}'}).catch(function(){}).finally(function(){
       AUTH_TOKEN='';
       CURRENT_USER=null;
       sessionStorage.removeItem('jagdish-token');
       location.reload();
     });
+  }).catch(function(e){
+    console.warn('Logout cancelled because save failed',e);
+    toast('⚠ Data was not saved. Logout cancelled; please try again.');
   });
 }
-function resetData(){
-  if(!confirm('Reset only your user profile data and restore sample records?'))return;
-  D=JSON.parse(JSON.stringify(DEFAULT_DATA));
-  saveData();
-  goPage('dashboard');
-}
-
 // ============================================================
 // HELPERS
 // ============================================================
@@ -368,7 +370,7 @@ function n2w(n){
 // NAV
 // ============================================================
 function goPage(p){
-  saveData();
+  saveData().catch(function(e){console.warn('Could not save profile data',e);toast('⚠ Could not save data. Check connection and try again.');});
   var all=['dashboard','invoices','re6','inventory','drivers','vehicles','parties','products','settings'];
   for(var i=0;i<all.length;i++){var e=document.getElementById('ni-'+all[i]);if(e)e.classList.remove('on');}
   var e2=document.getElementById('ni-'+p);if(e2)e2.classList.add('on');
@@ -871,7 +873,7 @@ function pgSettings(){
   h+='<div class="fg"><label class="fl">Bank Name</label><input class="fi" id="s-bk" value="'+c.bank+'"></div>';
   h+='<div class="fr"><div class="fg"><label class="fl">Account No.</label><input class="fi" id="s-ac" value="'+c.acc+'"></div><div class="fg"><label class="fl">IFSC</label><input class="fi" id="s-if" value="'+c.ifsc+'"></div></div>';
   h+='</div></div></div>';
-  h+='<div style="display:flex;gap:8px;margin-top:6px"><button class="btn bp" onclick="saveSettings()">💾 Save Settings</button><button class="btn bd" onclick="resetData()">Reset Saved Data</button></div>';
+  h+='<div style="display:flex;gap:8px;margin-top:6px"><button class="btn bp" onclick="saveSettings()">💾 Save Settings</button></div>';
   return h;
 }
 function saveSettings(){
@@ -888,8 +890,7 @@ function saveSettings(){
   D.co.acc=document.getElementById('s-ac').value;
   D.co.ifsc=document.getElementById('s-if').value;
   D.co.terms=document.getElementById('s-terms').value;
-  saveData();
-  toast('✅ Settings saved!');
+  saveData().then(function(){toast('✅ Settings saved!');}).catch(function(e){console.warn('Could not save settings',e);toast('⚠ Settings were not saved. Please try again.');});
 }
 
 // INIT
